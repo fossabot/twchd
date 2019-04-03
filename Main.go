@@ -31,18 +31,24 @@ func ConfigParser(filename string) (config *BotConfig) {
 	return
 }
 
+// JoinAll joins client to all accounts from config
+func (c *BotConfig) JoinAll(client *twitch.Client) {
+	for _, channel := range c.AccountsList {
+		client.Join(channel)
+	}
+}
+
+// TODO: flags
+// -c to pass config file
 func main() {
 	config := ConfigParser("config.yml")
 
 	client := twitch.NewClient(config.AccountName, config.AccountToken)
-	// client.OnNewMessage(func(channel string, user twitch.User, message twitch.Message) {
-	// 	fmt.Println(user.DisplayName, message.Text)
-	// })
+	client.OnNewMessage(func(channel string, user twitch.User, message twitch.Message) {
+		log.Printf("%+v\n", user)
+	})
 
-	// client.Join("vanya83")
+	config.JoinAll(client)
 
-	// err = client.Connect()
-	// if err != nil {
-	// 	panic(err)
-	// }
+	check(client.Connect())
 }
