@@ -1,9 +1,9 @@
 # Account name
 account_name: vanya109
 
-# Account oauth token number
+# Account oauth token
 # https://twitchapps.com/tmi/
-account_oauth: kic4lme1k221w4c6soyrppnwros6b0
+account_token: oauth:kic4lme1k221w4c6soyrppnwros6b0
 
 # List accounts for joining
 join_to:
