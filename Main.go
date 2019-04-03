@@ -34,6 +34,11 @@ func ConfigParser(filename string) (config *BotConfig) {
 	return
 }
 
+// NewClient creates twitch client from config
+func (c *BotConfig) NewClient() *twitch.Client {
+	return twitch.NewClient(c.AccountName, c.AccountToken)
+}
+
 // JoinAll joins client to all accounts from config
 func (c *BotConfig) JoinAll(client *twitch.Client) {
 	for _, channel := range c.AccountsList {
@@ -43,7 +48,8 @@ func (c *BotConfig) JoinAll(client *twitch.Client) {
 
 var flagConfigPath string
 
-func checkConfigFlag() error {
+// verify config path
+func configPath() error {
 	if len(flagConfigPath) == 0 {
 		return errors.New("path to config file does not passed")
 	}
@@ -56,17 +62,17 @@ func checkConfigFlag() error {
 }
 
 func init() {
-	const usageConfigFlag = "path to config file"
-	flag.StringVar(&flagConfigPath, "c", "", usageConfigFlag)
-	flag.StringVar(&flagConfigPath, "config", "", usageConfigFlag)
+	const usageFlagConfig = "path to config file"
+	flag.StringVar(&flagConfigPath, "c", "", usageFlagConfig)
+	flag.StringVar(&flagConfigPath, "config", "", usageFlagConfig)
 	flag.Parse()
 }
 
 func main() {
-	check(checkConfigFlag())
+	check(configPath())
 	config := ConfigParser(flagConfigPath)
 
-	client := twitch.NewClient(config.AccountName, config.AccountToken)
+	client := config.NewClient()
 	client.OnNewMessage(func(channel string, user twitch.User, message twitch.Message) {
 		log.Printf("%+v\n", user)
 	})
