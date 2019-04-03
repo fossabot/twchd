@@ -1,8 +1,11 @@
 package main
 
 import (
+	"errors"
+	"flag"
 	"io/ioutil"
 	"log"
+	"os"
 
 	"github.com/gempir/go-twitch-irc"
 	"github.com/go-yaml/yaml"
@@ -38,10 +41,30 @@ func (c *BotConfig) JoinAll(client *twitch.Client) {
 	}
 }
 
-// TODO: flags
-// -c to pass config file
+var flagConfigPath string
+
+func checkConfigFlag() error {
+	if len(flagConfigPath) == 0 {
+		return errors.New("path to config file does not passed")
+	}
+
+	if _, err := os.Stat(flagConfigPath); os.IsNotExist(err) {
+		return errors.New("file does not exists")
+	}
+
+	return nil
+}
+
+func init() {
+	const usageConfigFlag = "path to config file"
+	flag.StringVar(&flagConfigPath, "c", "", usageConfigFlag)
+	flag.StringVar(&flagConfigPath, "config", "", usageConfigFlag)
+	flag.Parse()
+}
+
 func main() {
-	config := ConfigParser("config.yml")
+	check(checkConfigFlag())
+	config := ConfigParser(flagConfigPath)
 
 	client := twitch.NewClient(config.AccountName, config.AccountToken)
 	client.OnNewMessage(func(channel string, user twitch.User, message twitch.Message) {
