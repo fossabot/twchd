@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -72,19 +73,30 @@ func (f *BotCliFlags) VerifyPath() error {
 	return nil
 }
 
+// TODO: EmoteFilter
+
 func main() {
 	flags := NewCliFlags()
 	check(flags.VerifyPath())
 
+	// journal, err := syslog.New(syslog.LOG_DEBUG|syslog.LOG_DAEMON, "botbot.com")
+	// check(err)
+
 	config := ConfigParser(flags.ConfigPath)
 
-	client := twitch.NewClient(config.AccountName, config.AccountToken)
-	// TODO: Select important fields
-	client.OnNewMessage(func(channel string, user twitch.User, message twitch.Message) {
+	twClient := twitch.NewClient(config.AccountName, config.AccountToken)
 
+	// esClient, err := elastic.NewClient()
+	// check(err)
+
+	twClient.OnNewMessage(func(channel string, user twitch.User, message twitch.Message) {
+		fmt.Printf("%+v\n", message)
+		if flags.DebugOutput {
+			//journal.Debug()
+		}
 	})
 
-	config.JoinAllTo(client)
+	config.JoinAllTo(twClient)
 
-	check(client.Connect())
+	check(twClient.Connect())
 }
