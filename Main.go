@@ -34,50 +34,57 @@ func ConfigParser(filename string) (config *BotConfig) {
 	return
 }
 
-// NewClient creates twitch client from config
-func (c *BotConfig) NewClient() *twitch.Client {
-	return twitch.NewClient(c.AccountName, c.AccountToken)
-}
-
-// JoinAll joins client to all accounts from config
-func (c *BotConfig) JoinAll(client *twitch.Client) {
+// JoinAllTo joins client to all accounts from config
+func (c *BotConfig) JoinAllTo(client *twitch.Client) {
 	for _, channel := range c.AccountsList {
 		client.Join(channel)
 	}
 }
 
-var flagConfigPath string
+// BotCliFlags store cli flags after parse
+type BotCliFlags struct {
+	ConfigPath  string
+	DebugOutput bool
+}
 
-// verify config path
-func configPath() error {
-	if len(flagConfigPath) == 0 {
+// NewCliFlags parse cli args and return BotCliFlags struct
+func NewCliFlags() *BotCliFlags {
+	flagConfig := flag.String("config", "", "path to config file")
+	flagDebug := flag.Bool("debug", false, "addition output to syslog")
+	flag.Parse()
+
+	return &BotCliFlags{
+		ConfigPath:  *flagConfig,
+		DebugOutput: *flagDebug,
+	}
+}
+
+// VerifyPath verifies ConfigPath
+func (f *BotCliFlags) VerifyPath() error {
+	if len(f.ConfigPath) == 0 {
 		return errors.New("path to config file does not passed")
 	}
 
-	if _, err := os.Stat(flagConfigPath); os.IsNotExist(err) {
+	if _, err := os.Stat(f.ConfigPath); os.IsNotExist(err) {
 		return errors.New("file does not exists")
 	}
 
 	return nil
 }
 
-func init() {
-	const usageFlagConfig = "path to config file"
-	flag.StringVar(&flagConfigPath, "c", "", usageFlagConfig)
-	flag.StringVar(&flagConfigPath, "config", "", usageFlagConfig)
-	flag.Parse()
-}
-
 func main() {
-	check(configPath())
-	config := ConfigParser(flagConfigPath)
+	flags := NewCliFlags()
+	check(flags.VerifyPath())
 
-	client := config.NewClient()
+	config := ConfigParser(flags.ConfigPath)
+
+	client := twitch.NewClient(config.AccountName, config.AccountToken)
+	// TODO: Select important fields
 	client.OnNewMessage(func(channel string, user twitch.User, message twitch.Message) {
-		log.Printf("%+v\n", user)
+
 	})
 
-	config.JoinAll(client)
+	config.JoinAllTo(client)
 
 	check(client.Connect())
 }
