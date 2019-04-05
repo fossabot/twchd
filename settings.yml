@@ -1,3 +1,4 @@
+## Twitch Client settings
 # Account name
 account_name: vanya109
 
@@ -8,4 +9,11 @@ account_token: oauth:kic4lme1k221w4c6soyrppnwros6b0
 # List accounts for joining
 join_to:
   - vanya83
-  - stealth_unit
+
+## Elastic Client settings
+# Name of index for creation
+index: twitchchat
+
+# Name of type for creation
+# Don't forget to change mapping.json
+type: message
