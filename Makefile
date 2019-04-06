@@ -6,7 +6,7 @@ LDFLAGS 	= 	-ldflags "-s -w"
 
 build:
 	@echo "Building binary..."
-	go build -o $(GOBIN)/$(PROJECTNAME) $(GOFILES)
+	CGO_ENABLED=0 go build $(LDFLAGS) -o $(GOBIN)/$(PROJECTNAME) $(GOFILES)
 
 test:
 	go test -v ./...
@@ -19,3 +19,6 @@ clean:
 deps:
 	@echo "Installing missing dependencies..."
 	@go get
+
+image: build
+	docker build -t aded/$(PROJECTNAME):$(shell git describe --tags) .

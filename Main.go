@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
-	"log/syslog"
 	"regexp"
 	"strconv"
 
@@ -129,39 +128,31 @@ func main() {
 	flags := NewFlagsCLI()
 	Check(flags.VerifyPath())
 
-	journal, err := syslog.New(syslog.LOG_DEBUG|syslog.LOG_DAEMON, "botbot.com")
-	Check(err)
-
 	config := NewBotConfig(flags.ConfigPath)
-	/*
-		twClient := twitch.NewClient(config.AccountName, config.AccountToken)
-	*/
+
 	esClient, err := elastic.NewClient()
 	Check(err)
 
 	exists, err := esClient.IndexExists(config.IndexES).Do(context.Background())
 	Check(err)
 	if !exists {
-		journal.Notice("index '" + config.IndexES + "' does not exists, creating...")
-
 		mapping, err := ioutil.ReadFile("mapping.json")
 		Check(err)
 
 		createIndex, err := esClient.CreateIndex(config.IndexES).Body(string(mapping)).Do(context.Background())
 		Check(err)
 		if !createIndex.Acknowledged {
-			panic(errors.New("index" + config.IndexES + "does not created"))
+			panic(errors.New("index '" + config.IndexES + "' does not created"))
 		}
 	}
 
 	/*
+		twClient := twitch.NewClient(config.AccountName, config.AccountToken)
+
 		twClient.OnNewMessage(func(channel string, user twitch.User, message twitch.Message) {
 			esMsg, err := NewMessage(&message)
 			if err != nil {
 				return
-			}
-			if flags.DebugOutput {
-				journal.Debug(esMsg.Dump())
 			}
 
 		})
