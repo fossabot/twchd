@@ -1,13 +1,16 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"log/syslog"
 	"regexp"
 	"strconv"
 
 	"github.com/gempir/go-twitch-irc"
+	"github.com/olivere/elastic"
 )
 
 // Check unrecoverable error and panic
@@ -130,24 +133,41 @@ func main() {
 	Check(err)
 
 	config := NewBotConfig(flags.ConfigPath)
+	/*
+		twClient := twitch.NewClient(config.AccountName, config.AccountToken)
+	*/
+	esClient, err := elastic.NewClient()
+	Check(err)
 
-	twClient := twitch.NewClient(config.AccountName, config.AccountToken)
+	exists, err := esClient.IndexExists(config.IndexES).Do(context.Background())
+	Check(err)
+	if !exists {
+		journal.Notice("index '" + config.IndexES + "' does not exists, creating...")
 
-	// ctx := context.Background()
-	// esClient, err := elastic.NewClient()
-	// Check(err)
+		mapping, err := ioutil.ReadFile("mapping.json")
+		Check(err)
 
-	twClient.OnNewMessage(func(channel string, user twitch.User, message twitch.Message) {
-		esMsg, err := NewMessage(&message)
-		if err != nil {
-			return
+		createIndex, err := esClient.CreateIndex(config.IndexES).Body(string(mapping)).Do(context.Background())
+		Check(err)
+		if !createIndex.Acknowledged {
+			panic(errors.New("index" + config.IndexES + "does not created"))
 		}
-		if flags.DebugOutput {
-			journal.Debug(esMsg.Dump())
-		}
-	})
+	}
 
-	config.JoinAllTo(twClient)
+	/*
+		twClient.OnNewMessage(func(channel string, user twitch.User, message twitch.Message) {
+			esMsg, err := NewMessage(&message)
+			if err != nil {
+				return
+			}
+			if flags.DebugOutput {
+				journal.Debug(esMsg.Dump())
+			}
 
-	Check(twClient.Connect())
+		})
+
+		config.JoinAllTo(twClient)
+
+		Check(twClient.Connect())
+	*/
 }
