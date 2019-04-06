@@ -24,7 +24,7 @@ func NewFlagsCLI() *FlagsCLI {
 	}
 }
 
-// VerifyPath verifies ConfigPath
+// VerifyPath verifies existance ConfigPath
 func (f *FlagsCLI) VerifyPath() error {
 	if len(f.ConfigPath) == 0 {
 		return errors.New("path to config file does not passed")

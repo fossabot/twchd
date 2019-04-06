@@ -1,14 +1,21 @@
-BINARY_NAME	:=	bot
-LDFLAGS		:=	-s -w
-
-.PHONY: build test clean
+PROJECTNAME := 	$(shell basename "$(PWD)")
+GOBASE 		:= 	$(shell pwd)
+GOBIN 		:= 	$(GOBASE)/bin
+GOFILES 	:= 	$(wildcard *.go)
+LDFLAGS 	= 	-ldflags "-s -w"
 
 build:
-	go build -v -o $(BINARY_NAME) -ldflags "${LDFLAGS}"
+	@echo "Building binary..."
+	go build -o $(GOBIN)/$(PROJECTNAME) $(GOFILES)
 
 test:
 	go test -v ./...
 
 clean:
+	@echo "Cleaning build cache and binaries..."
 	@go clean
-	@rm -f $(BINARY_NAME)
+	@rm -f $(GOBIN)/$(PROJECTNAME)
+
+deps:
+	@echo "Installing missing dependencies..."
+	@go get
