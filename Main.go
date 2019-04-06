@@ -3,77 +3,18 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"flag"
-	"io/ioutil"
-	"log"
 	"log/syslog"
-	"os"
 	"regexp"
 	"strconv"
 
 	"github.com/gempir/go-twitch-irc"
-	"github.com/go-yaml/yaml"
 )
 
-func check(err error) {
+// Check unrecoverable error and panic
+func Check(err error) {
 	if err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
-}
-
-// BotConfig struct represent config from file
-type BotConfig struct {
-	AccountName  string   `yaml:"account_name"`
-	AccountToken string   `yaml:"account_token"`
-	AccountsList []string `yaml:"join_to"`
-}
-
-// ConfigParser takes config file and return BotConfig struct
-func ConfigParser(filename string) (config *BotConfig) {
-	rawConfig, err := ioutil.ReadFile(filename)
-	check(err)
-
-	config = new(BotConfig)
-	check(yaml.Unmarshal(rawConfig, config))
-	return
-}
-
-// JoinAllTo joins client to all accounts from config
-func (c *BotConfig) JoinAllTo(client *twitch.Client) {
-	for _, channel := range c.AccountsList {
-		client.Join(channel)
-	}
-}
-
-// BotCliFlags store cli flags after parse
-type BotCliFlags struct {
-	ConfigPath  string
-	DebugOutput bool
-}
-
-// NewCliFlags parse cli args and return BotCliFlags struct
-func NewCliFlags() *BotCliFlags {
-	flagConfig := flag.String("config", "", "path to config file")
-	flagDebug := flag.Bool("debug", false, "addition output to syslog")
-	flag.Parse()
-
-	return &BotCliFlags{
-		ConfigPath:  *flagConfig,
-		DebugOutput: *flagDebug,
-	}
-}
-
-// VerifyPath verifies ConfigPath
-func (f *BotCliFlags) VerifyPath() error {
-	if len(f.ConfigPath) == 0 {
-		return errors.New("path to config file does not passed")
-	}
-
-	if _, err := os.Stat(f.ConfigPath); os.IsNotExist(err) {
-		return errors.New("file does not exists")
-	}
-
-	return nil
 }
 
 // User represent part related with user info
@@ -99,28 +40,42 @@ type Message struct {
 	Channel   `json:"channel"`
 }
 
-// MakeMessage select fields from twitch.Message
-func MakeMessage(msg *twitch.Message) *Message {
+// NewMessage select fields from twitch.Message
+func NewMessage(msg *twitch.Message) (*Message, error) {
 	sentTS, err := strconv.Atoi(msg.Tags["tmi-sent-ts"])
-	check(err)
+	if err != nil {
+		return nil, err
+	}
 
 	userID, err := strconv.Atoi(msg.Tags["user-id"])
-	check(err)
+	if err != nil {
+		return nil, err
+	}
 
 	mod, err := strIntToBool(msg.Tags["mod"])
-	check(err)
+	if err != nil {
+		return nil, err
+	}
 
 	sub, err := strIntToBool(msg.Tags["subscriber"])
-	check(err)
+	if err != nil {
+		return nil, err
+	}
 
 	turbo, err := strIntToBool(msg.Tags["turbo"])
-	check(err)
+	if err != nil {
+		return nil, err
+	}
 
-	chID, err := strconv.Atoi(msg.ChannelID)
-	check(err)
+	channelID, err := strconv.Atoi(msg.ChannelID)
+	if err != nil {
+		return nil, err
+	}
 
-	chName, err := selectChannelName(msg.Raw)
-	check(err)
+	channelName, err := selectChannelName(msg.Raw)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Message{
 		Text:      msg.Text,
@@ -133,15 +88,16 @@ func MakeMessage(msg *twitch.Message) *Message {
 			IsTurbo:     turbo,
 		},
 		Channel: Channel{
-			ChannelID:   uint64(chID),
-			ChannelName: chName,
+			ChannelID:   uint64(channelID),
+			ChannelName: channelName,
 		},
-	}
+	}, nil
 }
 
+// Dump whole message for debug purpose
 func (m *Message) Dump() string {
-	str, err := json.Marshal(&m)
-	check(err)
+	str, err := json.Marshal(m)
+	Check(err)
 
 	return string(str)
 }
@@ -149,7 +105,7 @@ func (m *Message) Dump() string {
 // selectChannelName extract channel name from raw string in message
 func selectChannelName(raw string) (string, error) {
 	re, err := regexp.Compile(`PRIVMSG\s#(.*?)\s`)
-	check(err)
+	Check(err)
 
 	match := re.FindStringSubmatch(raw)
 	if len(match) == 0 {
@@ -166,24 +122,26 @@ func strIntToBool(str string) (bool, error) {
 	return false, errors.New("Can not convert")
 }
 
-// TODO: DO NOT EXIT ON MESSAGE PROCESSING ERROR
 func main() {
-	flags := NewCliFlags()
-	check(flags.VerifyPath())
+	flags := NewFlagsCLI()
+	Check(flags.VerifyPath())
 
 	journal, err := syslog.New(syslog.LOG_DEBUG|syslog.LOG_DAEMON, "botbot.com")
-	check(err)
+	Check(err)
 
-	config := ConfigParser(flags.ConfigPath)
+	config := NewBotConfig(flags.ConfigPath)
 
 	twClient := twitch.NewClient(config.AccountName, config.AccountToken)
 
 	// ctx := context.Background()
 	// esClient, err := elastic.NewClient()
-	// check(err)
+	// Check(err)
 
 	twClient.OnNewMessage(func(channel string, user twitch.User, message twitch.Message) {
-		esMsg := MakeMessage(&message)
+		esMsg, err := NewMessage(&message)
+		if err != nil {
+			return
+		}
 		if flags.DebugOutput {
 			journal.Debug(esMsg.Dump())
 		}
@@ -191,5 +149,5 @@ func main() {
 
 	config.JoinAllTo(twClient)
 
-	check(twClient.Connect())
+	Check(twClient.Connect())
 }
