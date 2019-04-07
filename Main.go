@@ -99,7 +99,7 @@ func NewMessage(msg *twitch.Message) (*Message, error) {
 }
 
 // Dump whole message for debug purpose
-func (m *Message) Dump() string {
+func (m *Message) String() string {
 	str, err := json.Marshal(m)
 	Check(err)
 
@@ -152,21 +152,32 @@ func main() {
 		}
 	}
 
-	/*
-		twClient := twitch.NewClient(config.AccountName, config.AccountToken)
+	twClient := twitch.NewClient(config.AccountName, config.AccountToken)
 
-		twClient.OnNewMessage(func(channel string, user twitch.User, message twitch.Message) {
-			esMsg, err := NewMessage(&message)
-			if err != nil {
-				return
-			}
-			if flags.DebugOutput {
-				logger.Println(esMsg.Dump())
-			}
-		})
+	twClient.OnNewMessage(func(channel string, user twitch.User, message twitch.Message) {
+		esMsg, err := NewMessage(&message)
+		if err != nil {
+			return
+		}
 
-		config.JoinAllTo(twClient)
+		_, err = esClient.Index().
+			Index(config.IndexES).
+			Type(config.TypeES).
+			BodyJson(esMsg).
+			Do(context.Background())
+		if err != nil {
+			return
+		}
 
-		Check(twClient.Connect())
-	*/
+		if flags.DebugOutput {
+			logger.Println(esMsg)
+		}
+	})
+
+	config.JoinAllTo(twClient)
+
+	Check(twClient.Connect())
+
+	_, err = esClient.Flush().Index(config.IndexES).Do(context.Background())
+	Check(err)
 }
