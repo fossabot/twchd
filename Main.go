@@ -153,6 +153,7 @@ func main() {
 	}
 
 	twClient := twitch.NewClient(config.AccountName, config.AccountToken)
+	twClient.TLS = false
 
 	twClient.OnNewMessage(func(channel string, user twitch.User, message twitch.Message) {
 		esMsg, err := NewMessage(&message)
