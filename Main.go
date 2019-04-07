@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"log"
+	"os"
 	"regexp"
 	"strconv"
 
@@ -130,12 +132,16 @@ func main() {
 
 	config := NewBotConfig(flags.ConfigPath)
 
+	logger := log.New(os.Stderr, "", 0)
+
 	esClient, err := elastic.NewClient()
 	Check(err)
 
 	exists, err := esClient.IndexExists(config.IndexES).Do(context.Background())
 	Check(err)
 	if !exists {
+		logger.Printf("index '%v' does not exists, creating...\n", config.IndexES)
+
 		mapping, err := ioutil.ReadFile("mapping.json")
 		Check(err)
 
@@ -154,7 +160,9 @@ func main() {
 			if err != nil {
 				return
 			}
-
+			if flags.DebugOutput {
+				logger.Println(esMsg.Dump())
+			}
 		})
 
 		config.JoinAllTo(twClient)
