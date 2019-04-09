@@ -10,10 +10,13 @@ account_token: oauth:kic4lme1k221w4c6soyrppnwros6b0
 join_to:
   - vanya83
 
-## Elastic Client settings
-# Name of index for creation
-index: twitchchat
+## RabbitMQ settings
+login: guest
 
-# Name of type for creation
-# Don't forget to change mapping.json
-type: message
+password: guest
+
+address: localhost
+
+port: 5672
+
+exchange_name: messages

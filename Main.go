@@ -1,17 +1,14 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"log"
 	"os"
 	"regexp"
 	"strconv"
 
 	"github.com/gempir/go-twitch-irc"
-	"github.com/olivere/elastic"
 )
 
 // Check unrecoverable error and panic
@@ -134,38 +131,11 @@ func main() {
 
 	logger := log.New(os.Stderr, "", 0)
 
-	esClient, err := elastic.NewClient()
-	Check(err)
-
-	exists, err := esClient.IndexExists(config.IndexES).Do(context.Background())
-	Check(err)
-	if !exists {
-		logger.Printf("index '%v' does not exists, creating...\n", config.IndexES)
-
-		mapping, err := ioutil.ReadFile("mapping.json")
-		Check(err)
-
-		createIndex, err := esClient.CreateIndex(config.IndexES).Body(string(mapping)).Do(context.Background())
-		Check(err)
-		if !createIndex.Acknowledged {
-			panic(errors.New("index '" + config.IndexES + "' does not created"))
-		}
-	}
-
 	twClient := twitch.NewClient(config.AccountName, config.AccountToken)
 	twClient.TLS = false
 
 	twClient.OnNewMessage(func(channel string, user twitch.User, message twitch.Message) {
 		esMsg, err := NewMessage(&message)
-		if err != nil {
-			return
-		}
-
-		_, err = esClient.Index().
-			Index(config.IndexES).
-			Type(config.TypeES).
-			BodyJson(esMsg).
-			Do(context.Background())
 		if err != nil {
 			return
 		}
@@ -179,6 +149,4 @@ func main() {
 
 	Check(twClient.Connect())
 
-	_, err = esClient.Flush().Index(config.IndexES).Do(context.Background())
-	Check(err)
 }
