@@ -12,8 +12,11 @@ type BotConfig struct {
 	AccountName  string   `yaml:"account_name"`
 	AccountToken string   `yaml:"account_token"`
 	AccountsList []string `yaml:"join_to"`
-	IndexES      string   `yaml:"index"`
-	TypeES       string   `yaml:"type"`
+	LoginMB      string   `yaml:"login"`
+	PasswdMB     string   `yaml:"password"`
+	AddrMB       string   `yaml:"address"`
+	PortMB       string   `yaml:"port"`
+	Exchange     string   `yaml:"exchange_name"`
 }
 
 // NewBotConfig takes config file and return BotConfig struct

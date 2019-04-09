@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strconv"
 
+	"github.com/streadway/amqp"
+
 	"github.com/gempir/go-twitch-irc"
 )
 
@@ -95,12 +97,12 @@ func NewMessage(msg *twitch.Message) (*Message, error) {
 	}, nil
 }
 
-// Dump whole message for debug purpose
-func (m *Message) String() string {
-	str, err := json.Marshal(m)
+// Dump whole message
+func (m *Message) Dump() (d []byte) {
+	d, err := json.Marshal(m)
 	Check(err)
 
-	return string(str)
+	return
 }
 
 // selectChannelName extract channel name from raw string in message
@@ -131,6 +133,27 @@ func main() {
 
 	logger := log.New(os.Stderr, "", 0)
 
+	// TODO: Reconnect
+	conn, err := amqp.Dial("amqp://" + config.LoginMB + ":" +
+		config.PasswdMB + "@" + config.AddrMB + ":" + config.PortMB + "/")
+	Check(err)
+	defer conn.Close()
+
+	mbCh, err := conn.Channel()
+	Check(err)
+	defer mbCh.Close()
+
+	err = mbCh.ExchangeDeclare(
+		config.Exchange, // name
+		"direct",        // type
+		true,            // durable
+		false,           // auto-deleted
+		false,           // internal
+		false,           // no-wait
+		nil,             // arguments
+	)
+	Check(err)
+
 	twClient := twitch.NewClient(config.AccountName, config.AccountToken)
 	twClient.TLS = false
 
@@ -140,8 +163,22 @@ func main() {
 			return
 		}
 
+		err = mbCh.Publish(
+			config.Exchange,   // exchange
+			esMsg.ChannelName, // routing key
+			false,             // mandatory
+			false,             // immediate
+			amqp.Publishing{
+				DeliveryMode: amqp.Persistent,
+				ContentType:  "application/json",
+				Body:         esMsg.Dump(),
+			})
+		if err != nil {
+			return
+		}
+
 		if flags.DebugOutput {
-			logger.Println(esMsg)
+			logger.Printf("%+v\n", *esMsg)
 		}
 	})
 
