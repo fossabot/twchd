@@ -125,7 +125,7 @@ func main() {
 	flags := NewFlagsCLI()
 	err := flags.VerifyPath()
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 	config := NewBotConfig(flags.ConfigPath)
 
@@ -134,7 +134,6 @@ func main() {
 	// TODO: Reconnect
 	conn, err := amqp.Dial("amqp://" + config.LoginMB + ":" +
 		config.PasswdMB + "@" + config.AddrMB + ":" + config.PortMB + "/")
-	flags.VerifyPath()
 	defer conn.Close()
 
 	mbCh, err := conn.Channel()
