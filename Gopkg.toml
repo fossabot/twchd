@@ -37,6 +37,10 @@
   name = "github.com/olivere/elastic"
   version = "6.2.17"
 
+[[constraint]]
+  branch = "master"
+  name = "github.com/shurcooL/vfsgen"
+
 [prune]
   go-tests = true
   unused-packages = true

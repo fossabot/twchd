@@ -3,7 +3,6 @@ package main
 import (
 	"io/ioutil"
 
-	"github.com/gempir/go-twitch-irc"
 	"github.com/go-yaml/yaml"
 )
 
@@ -28,11 +27,4 @@ func NewBotConfig(filename string) (config *BotConfig) {
 		panic(err)
 	}
 	return
-}
-
-// JoinAllTo joins client to all accounts from config
-func (c *BotConfig) JoinAllTo(client *twitch.Client) {
-	for _, channel := range c.AccountsList {
-		client.Join(channel)
-	}
 }

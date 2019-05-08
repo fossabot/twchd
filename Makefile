@@ -1,10 +1,10 @@
 PROJECTNAME := 	$(shell basename "$(PWD)")d
 GOBASE 		:= 	$(shell pwd)
 GOBIN 		:= 	$(GOBASE)/bin
-GOFILES 	:= 	$(wildcard *.go)
+GOFILES 	:= 	$(filter-out assets_generate.go,$(wildcard *.go))
 LDFLAGS 	= 	-ldflags "-s -w"
 
-build:
+build: generate
 	@echo "Building binary..."
 	CGO_ENABLED=0 go build $(LDFLAGS) -o $(GOBIN)/$(PROJECTNAME) $(GOFILES)
 
@@ -15,10 +15,11 @@ clean:
 	@echo "Cleaning build cache and binaries..."
 	@go clean
 	@rm -f $(GOBIN)/$(PROJECTNAME)
-
-deps:
-	@echo "Installing missing dependencies..."
-	@go get
+	@rm -f assets.go
 
 image: build
 	docker build -t aded/$(PROJECTNAME):$(shell git describe --tags) .
+
+generate: assets_generate.go
+	@echo "Embedding statics..."
+	@go run $<
