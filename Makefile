@@ -1,4 +1,4 @@
-PROJECTNAME := 	$(shell basename "$(PWD)")
+PROJECTNAME := 	$(shell basename "$(PWD)")d
 GOBASE 		:= 	$(shell pwd)
 GOBIN 		:= 	$(GOBASE)/bin
 GOFILES 	:= 	$(wildcard *.go)

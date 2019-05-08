@@ -14,13 +14,6 @@ import (
 	"github.com/olivere/elastic"
 )
 
-// Check unrecoverable error and panic
-func Check(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
 // User represent part related with user info
 type User struct {
 	DisplayName string `json:"display_name"`
@@ -98,18 +91,22 @@ func NewMessage(msg *twitch.Message) (*Message, error) {
 	}, nil
 }
 
-// Dump whole message for debug purpose
-func (m *Message) String() string {
-	str, err := json.Marshal(m)
-	Check(err)
+// Dump whole message
+func (m *Message) Dump() (d []byte) {
+	d, err := json.Marshal(m)
+	if err != nil {
+		panic(err)
+	}
 
-	return string(str)
+	return
 }
 
 // selectChannelName extract channel name from raw string in message
 func selectChannelName(raw string) (string, error) {
 	re, err := regexp.Compile(`PRIVMSG\s#(.*?)\s`)
-	Check(err)
+	if err != nil {
+		panic(err)
+	}
 
 	match := re.FindStringSubmatch(raw)
 	if len(match) == 0 {
@@ -128,25 +125,35 @@ func strIntToBool(str string) (bool, error) {
 
 func main() {
 	flags := NewFlagsCLI()
-	Check(flags.VerifyPath())
-
+	err := flags.VerifyPath()
+	if err != nil {
+		log.Fatalln(err)
+	}
 	config := NewBotConfig(flags.ConfigPath)
 
 	logger := log.New(os.Stderr, "", 0)
 
 	esClient, err := elastic.NewClient()
-	Check(err)
+	if err != nil {
+		panic(err)
+	}
 
 	exists, err := esClient.IndexExists(config.IndexES).Do(context.Background())
-	Check(err)
+	if err != nil {
+		panic(err)
+	}
 	if !exists {
 		logger.Printf("index '%v' does not exists, creating...\n", config.IndexES)
 
 		mapping, err := ioutil.ReadFile("mapping.json")
-		Check(err)
+		if err != nil {
+			panic(err)
+		}
 
 		createIndex, err := esClient.CreateIndex(config.IndexES).Body(string(mapping)).Do(context.Background())
-		Check(err)
+		if err != nil {
+			panic(err)
+		}
 		if !createIndex.Acknowledged {
 			panic(errors.New("index '" + config.IndexES + "' does not created"))
 		}
@@ -171,14 +178,18 @@ func main() {
 		}
 
 		if flags.DebugOutput {
-			logger.Println(esMsg)
+			logger.Println(*esMsg)
 		}
 	})
 
 	config.JoinAllTo(twClient)
 
-	Check(twClient.Connect())
+	if twClient.Connect() != nil {
+		panic(err)
+	}
 
 	_, err = esClient.Flush().Index(config.IndexES).Do(context.Background())
-	Check(err)
+	if err != nil {
+		panic(err)
+	}
 }

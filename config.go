@@ -19,10 +19,14 @@ type BotConfig struct {
 // NewBotConfig takes config file and return BotConfig struct
 func NewBotConfig(filename string) (config *BotConfig) {
 	rawConfig, err := ioutil.ReadFile(filename)
-	Check(err)
+	if err != nil {
+		panic(err)
+	}
 
 	config = new(BotConfig)
-	Check(yaml.Unmarshal(rawConfig, config))
+	if yaml.Unmarshal(rawConfig, config) != nil {
+		panic(err)
+	}
 	return
 }
 
