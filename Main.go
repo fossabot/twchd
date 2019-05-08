@@ -8,17 +8,9 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/streadway/amqp"
-
 	"github.com/gempir/go-twitch-irc"
+	"github.com/streadway/amqp"
 )
-
-// Check unrecoverable error and panic
-func Check(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
 
 // User represent part related with user info
 type User struct {
@@ -100,7 +92,9 @@ func NewMessage(msg *twitch.Message) (*Message, error) {
 // Dump whole message
 func (m *Message) Dump() (d []byte) {
 	d, err := json.Marshal(m)
-	Check(err)
+	if err != nil {
+		panic(err)
+	}
 
 	return
 }
@@ -108,7 +102,9 @@ func (m *Message) Dump() (d []byte) {
 // selectChannelName extract channel name from raw string in message
 func selectChannelName(raw string) (string, error) {
 	re, err := regexp.Compile(`PRIVMSG\s#(.*?)\s`)
-	Check(err)
+	if err != nil {
+		panic(err)
+	}
 
 	match := re.FindStringSubmatch(raw)
 	if len(match) == 0 {
@@ -127,8 +123,10 @@ func strIntToBool(str string) (bool, error) {
 
 func main() {
 	flags := NewFlagsCLI()
-	Check(flags.VerifyPath())
-
+	err := flags.VerifyPath()
+	if err != nil {
+		panic(err)
+	}
 	config := NewBotConfig(flags.ConfigPath)
 
 	logger := log.New(os.Stderr, "", 0)
@@ -136,11 +134,13 @@ func main() {
 	// TODO: Reconnect
 	conn, err := amqp.Dial("amqp://" + config.LoginMB + ":" +
 		config.PasswdMB + "@" + config.AddrMB + ":" + config.PortMB + "/")
-	Check(err)
+	flags.VerifyPath()
 	defer conn.Close()
 
 	mbCh, err := conn.Channel()
-	Check(err)
+	if err != nil {
+		panic(err)
+	}
 	defer mbCh.Close()
 
 	err = mbCh.ExchangeDeclare(
@@ -152,7 +152,9 @@ func main() {
 		false,           // no-wait
 		nil,             // arguments
 	)
-	Check(err)
+	if err != nil {
+		panic(err)
+	}
 
 	twClient := twitch.NewClient(config.AccountName, config.AccountToken)
 	twClient.TLS = false
@@ -184,6 +186,8 @@ func main() {
 
 	config.JoinAllTo(twClient)
 
-	Check(twClient.Connect())
+	if twClient.Connect() != nil {
+		panic(err)
+	}
 
 }
