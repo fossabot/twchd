@@ -3,12 +3,28 @@ package main
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/gempir/go-twitch-irc"
 	"github.com/olivere/elastic"
 )
+
+func extractFile(filename string) []byte {
+	file, err := assets.Open(filename)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer file.Close()
+
+	text, err := ioutil.ReadAll(file)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	return text
+}
 
 func main() {
 	flags := NewFlagsCLI()
@@ -22,8 +38,19 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	var esCtx = context.Background()
 
-	twClient := twitch.NewClient(config.GetAccountName(), config.GetToken())
+	defer esClient.CloseIndex(config.Index).Do(esCtx)
+	defer esClient.Flush(config.Index).Do(esCtx)
+
+	_, err = esClient.IngestPutPipeline(config.Pipeline).
+		BodyString(string(extractFile("/pipeline.es"))).
+		Do(esCtx)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	var twClient = twitch.NewClient(config.GetAccountName(), config.GetToken())
 	twClient.TLS = false
 
 	twClient.OnPrivateMessage(func(message twitch.PrivateMessage) {
@@ -35,25 +62,24 @@ func main() {
 		var message2 = builder.String()
 
 		resp, err := esClient.Index().
-			Index(config.IndexES).
-			Type(config.TypeES).
-			Pipeline(config.PipelineES).
+			Index(config.Index).
+			Type(config.Type).
+			Pipeline(config.Pipeline).
 			BodyString(message2).
-			Do(context.Background())
+			Do(esCtx)
 		if err != nil {
 			return
 		}
 
 		if flags.DebugOutput {
-			log.Println(resp.Id, resp.Result, message2)
+			fmt.Fprintln(os.Stderr, resp.Id, resp.Result, message.User.DisplayName, message.Message)
 		}
 	})
 
 	for _, channel := range config.AccountsList {
 		twClient.Join(channel)
 	}
-
 	if twClient.Connect() != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 }

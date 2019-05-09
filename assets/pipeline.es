@@ -1,4 +1,3 @@
-PUT _ingest/pipeline/msg-parser
 {
     "description": "Preprocessing of gotten message string",
     "processors": [

@@ -15,7 +15,6 @@ join_to:
 index: twitchchat
 
 # Name of type for creation
-# Don't forget to change mapping.json
 type: message
 
 # Name of pipeline for processing raw message from grabber
