@@ -2,6 +2,9 @@ package main
 
 import (
 	"io/ioutil"
+	"log"
+	"os"
+	"regexp"
 
 	"github.com/go-yaml/yaml"
 )
@@ -28,4 +31,26 @@ func NewBotConfig(filename string) (config *BotConfig) {
 		panic(err)
 	}
 	return
+}
+
+func getFieldOrEnv(field string) string {
+	pattern, err := regexp.Compile(`^\${(.*?)}$`)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	var envVar = pattern.FindStringSubmatch(field)
+	if envVar == nil {
+		return field
+	}
+	return os.Getenv(envVar[1])
+}
+
+//
+func (b *BotConfig) GetAccountName() string {
+	return getFieldOrEnv(b.AccountName)
+}
+
+//
+func (b *BotConfig) GetToken() string {
+	return getFieldOrEnv(b.AccountToken)
 }

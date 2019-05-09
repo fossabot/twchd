@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"strings"
 
 	"github.com/gempir/go-twitch-irc"
@@ -12,21 +11,19 @@ import (
 )
 
 func main() {
-	logger := log.New(os.Stderr, "", 0)
-
 	flags := NewFlagsCLI()
 	err := flags.VerifyPath()
 	if err != nil {
-		logger.Fatalln(err)
+		log.Fatalln(err)
 	}
 	config := NewBotConfig(flags.ConfigPath)
 
 	esClient, err := elastic.NewClient()
 	if err != nil {
-		logger.Fatalln(err)
+		log.Fatalln(err)
 	}
 
-	twClient := twitch.NewClient(config.AccountName, config.AccountToken)
+	twClient := twitch.NewClient(config.GetAccountName(), config.GetToken())
 	twClient.TLS = false
 
 	twClient.OnPrivateMessage(func(message twitch.PrivateMessage) {
@@ -48,7 +45,7 @@ func main() {
 		}
 
 		if flags.DebugOutput {
-			logger.Println(resp.Id, resp.Result, message2)
+			log.Println(resp.Id, resp.Result, message2)
 		}
 	})
 
