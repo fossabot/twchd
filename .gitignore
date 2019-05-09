@@ -1,5 +1,5 @@
 .vscode/
 bin/
 vendor/
-.env
 assets.go
+.secret

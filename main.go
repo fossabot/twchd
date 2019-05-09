@@ -44,7 +44,7 @@ func main() {
 	defer esClient.Flush(config.Index).Do(esCtx)
 
 	_, err = esClient.IngestPutPipeline(config.Pipeline).
-		BodyString(string(extractFile("/pipeline.es"))).
+		BodyString(string(extractFile("/pipeline.json"))).
 		Do(esCtx)
 	if err != nil {
 		log.Fatalln(err)
