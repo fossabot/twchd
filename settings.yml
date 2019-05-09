@@ -17,3 +17,5 @@ index: twitchchat
 # Name of type for creation
 # Don't forget to change mapping.json
 type: message
+
+pipeline: msg-parser

@@ -13,6 +13,7 @@ type BotConfig struct {
 	AccountsList []string `yaml:"join_to"`
 	IndexES      string   `yaml:"index"`
 	TypeES       string   `yaml:"type"`
+	PipelineES   string   `yaml:"pipeline"`
 }
 
 // NewBotConfig takes config file and return BotConfig struct

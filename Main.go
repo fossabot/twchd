@@ -2,84 +2,53 @@ package main
 
 import (
 	"context"
-	"io/ioutil"
+	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/gempir/go-twitch-irc"
 	"github.com/olivere/elastic"
 )
 
 func main() {
+	logger := log.New(os.Stderr, "", 0)
+
 	flags := NewFlagsCLI()
 	err := flags.VerifyPath()
 	if err != nil {
-		log.Fatalln(err)
+		logger.Fatalln(err)
 	}
 	config := NewBotConfig(flags.ConfigPath)
 
-	logger := log.New(os.Stderr, "", 0)
-
 	esClient, err := elastic.NewClient()
 	if err != nil {
-		log.Fatalln(err)
-	}
-	inxCtx := context.Background()
-	exists, err := esClient.IndexExists(config.IndexES).Do(inxCtx)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	if !exists {
-		logger.Printf("index '%v' does not exists, creating...\n", config.IndexES)
-
-		file, err := assets.Open("/mapping.json")
-		if err != nil {
-			log.Fatalln(err)
-		}
-		defer file.Close()
-
-		mapping, err := ioutil.ReadAll(file)
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-		createIndex, err := esClient.CreateIndex(config.IndexES).Body(string(mapping)).Do(inxCtx)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		if !createIndex.Acknowledged {
-			log.Fatalln("index '" + config.IndexES + "' does not created")
-		}
+		logger.Fatalln(err)
 	}
 
 	twClient := twitch.NewClient(config.AccountName, config.AccountToken)
 	twClient.TLS = false
 
 	twClient.OnPrivateMessage(func(message twitch.PrivateMessage) {
+		var builder strings.Builder
+		fmt.Fprintf(&builder, "{\"msg\": \"%s,%s,", message.RoomID, message.Channel)
+		fmt.Fprintf(&builder, "%s,%d,", message.Message, message.Time.Unix())
+		fmt.Fprintf(&builder, "%s,%s,", message.User.DisplayName, message.User.ID)
+		fmt.Fprintf(&builder, "%s,%s,%s\"}", message.Tags["turbo"], message.Tags["subscriber"], message.Tags["mod"])
+		var message2 = builder.String()
 
-		// message.RoomID
-		// message.Channel
-
-		// message.Message
-		// message.Time
-
-		// message.User.DisplayName
-		// message.User.ID
-		// message.Tags["turbo"]
-		// message.Tags["subscriber"]
-		// message.Tags["mod"]
-
-		// _, err = esClient.Index().
-		// 	Index(config.IndexES).
-		// 	Type(config.TypeES).
-		// 	BodyString().
-		// 	Do(context.Background())
-		// if err != nil {
-		// 	return
-		// }
+		resp, err := esClient.Index().
+			Index(config.IndexES).
+			Type(config.TypeES).
+			Pipeline(config.PipelineES).
+			BodyString(message2).
+			Do(context.Background())
+		if err != nil {
+			return
+		}
 
 		if flags.DebugOutput {
-			logger.Printf("%+v\n", message)
+			logger.Println(resp.Id, resp.Result, message2)
 		}
 	})
 
@@ -88,11 +57,6 @@ func main() {
 	}
 
 	if twClient.Connect() != nil {
-		panic(err)
-	}
-
-	_, err = esClient.Flush().Index(config.IndexES).Do(inxCtx)
-	if err != nil {
 		panic(err)
 	}
 }

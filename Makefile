@@ -4,7 +4,7 @@ GOBIN 		:= 	$(GOBASE)/bin
 GOFILES 	:= 	$(filter-out assets_generate.go,$(wildcard *.go))
 LDFLAGS 	= 	-ldflags "-s -w"
 
-build: generate
+build:
 	@echo "Building binary..."
 	CGO_ENABLED=0 go build $(LDFLAGS) -o $(GOBIN)/$(PROJECTNAME) $(GOFILES)
 
@@ -19,10 +19,6 @@ clean:
 
 image: build
 	docker build -t aded/$(PROJECTNAME):$(shell git describe --tags) .
-
-generate: assets_generate.go
-	@echo "Embedding statics..."
-	@go run $<
 
 zsh-completion: $(GOBASE)/tools/_twchd
 	@echo "ZSH Completion installing..."
