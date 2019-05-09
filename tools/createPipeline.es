@@ -18,6 +18,14 @@ PUT _ingest/pipeline/msg-parser
                     "UNIX"
                 ]
             },
+            "date_index_name": {
+                "field": "time",
+                "index_name_prefix": "twitchchat-",
+                "date_rounding": "d",
+                "date_formats": [
+                    "UNIX"
+                ]
+            },
             "remove": {
                 "field": [
                     "time",

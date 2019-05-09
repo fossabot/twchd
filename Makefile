@@ -15,7 +15,6 @@ clean:
 	@echo "Cleaning build cache and binaries..."
 	@go clean
 	@rm -f $(GOBIN)/$(PROJECTNAME)
-	@rm -f assets.go
 
 image: build
 	docker build -t aded/$(PROJECTNAME):$(shell git describe --tags) .
