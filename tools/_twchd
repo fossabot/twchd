@@ -1,0 +1,12 @@
+#compdef twchd
+
+_twchd_args=(
+    '-config[path to config file]:config:_files'
+    '-debug[show debug information]'
+)
+
+_twchd() {
+    _arguments $_twchd_args
+}
+
+_twchd

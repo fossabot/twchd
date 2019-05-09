@@ -23,3 +23,7 @@ image: build
 generate: assets_generate.go
 	@echo "Embedding statics..."
 	@go run $<
+
+zsh-completion: $(GOBASE)/tools/_twchd
+	@echo "ZSH Completion installing..."
+	@cp $(GOBASE)/tools/_twchd /usr/share/zsh/site-functions
