@@ -19,7 +19,7 @@
             },
             "date_index_name": {
                 "field": "time",
-                "index_name_prefix": "twitchchat-",
+                "index_name_prefix": "${TWITCH_CHANNEL}-",
                 "date_rounding": "d",
                 "date_formats": [
                     "UNIX"

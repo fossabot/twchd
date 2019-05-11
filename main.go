@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -11,20 +10,6 @@ import (
 	"github.com/gempir/go-twitch-irc"
 	"github.com/olivere/elastic"
 )
-
-func extractFile(filename string) []byte {
-	file, err := assets.Open(filename)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer file.Close()
-
-	text, err := ioutil.ReadAll(file)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	return text
-}
 
 func main() {
 	flags := NewFlagsCLI()
@@ -43,8 +28,14 @@ func main() {
 	defer esClient.CloseIndex(config.Index).Do(esCtx)
 	defer esClient.Flush(config.Index).Do(esCtx)
 
+	ingestPipeline, err := Asset("assets/pipeline.json")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	var newPipeline = strings.Replace(string(ingestPipeline), "${TWITCH_CHANNEL}", config.Index, 1)
+
 	_, err = esClient.IngestPutPipeline(config.Pipeline).
-		BodyString(string(extractFile("/pipeline.json"))).
+		BodyString(newPipeline).
 		Do(esCtx)
 	if err != nil {
 		log.Fatalln(err)
@@ -72,7 +63,8 @@ func main() {
 		}
 
 		if flags.DebugOutput {
-			fmt.Fprintln(os.Stderr, resp.Id, resp.Result, message.User.DisplayName, message.Message)
+			fmt.Fprintf(os.Stderr, "Id: %v, Result: %v, DisplayName: %v, Message: %v\n",
+				resp.Id, resp.Result, message.User.DisplayName, message.Message)
 		}
 	})
 
