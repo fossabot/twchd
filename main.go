@@ -69,8 +69,7 @@ func main() {
 		}
 
 		if flags.DebugOutput {
-			fmt.Fprintf(os.Stderr, "Id: %v, Result: %v, DisplayName: %v, Message: %v\n",
-				resp.Id, resp.Result, message.User.DisplayName, message.Message)
+			fmt.Fprintf(os.Stderr, "[%v] %v: %v\n", resp.Id, message.User.DisplayName, message.Message)
 		}
 	})
 
