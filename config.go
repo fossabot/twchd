@@ -3,12 +3,23 @@ package main
 import (
 	"errors"
 	"io/ioutil"
-	"log"
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/go-yaml/yaml"
 )
+
+// VerifyPath verifies existance file
+func VerifyPath(filename string) error {
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		return errors.New("file does not exists")
+	}
+	if !strings.HasSuffix(filename, ".yml") && !strings.HasSuffix(filename, ".yaml") {
+		return errors.New("unsupported file format")
+	}
+	return nil
+}
 
 // BotConfig struct represent config from file
 type BotConfig struct {
@@ -21,49 +32,56 @@ type BotConfig struct {
 }
 
 // NewBotConfig takes config file and return BotConfig struct
-func NewBotConfig(filename string) (config *BotConfig) {
+func NewBotConfig(filename string) (config *BotConfig, err error) {
+	err = VerifyPath(filename)
+	if err != nil {
+		return nil, err
+	}
 	rawConfig, err := ioutil.ReadFile(filename)
 	if err != nil {
-		log.Fatalln(err)
+		return nil, err
 	}
 	config = new(BotConfig)
-	if yaml.Unmarshal(rawConfig, config) != nil {
-		log.Fatalln(err)
+	err = yaml.Unmarshal(rawConfig, config)
+	if err != nil {
+		return nil, err
 	}
 	return
 }
 
 func getFieldOrEnv(field string) (string, error) {
+	if field == "" {
+		return "", errors.New("Config field empty")
+	}
 	pattern, err := regexp.Compile(`^\${(.*?)}$`)
 	if err != nil {
-		log.Fatalln(err)
+		return "", err
 	}
-	var envVar = pattern.FindStringSubmatch(field)
-	if envVar == nil {
+	var textVar = pattern.FindStringSubmatch(field)
+	if textVar == nil {
 		return field, nil
 	}
-
-	var env = os.Getenv(envVar[1])
-	if env == "" {
+	var envVar = os.Getenv(textVar[1])
+	if envVar == "" {
 		return "", errors.New("Environment variable does not set")
 	}
-	return env, nil
+	return envVar, nil
 }
 
 // GetAccountName return account name from environment or config file
-func (b *BotConfig) GetAccountName() string {
+func (b *BotConfig) GetAccountName() (string, error) {
 	accountName, err := getFieldOrEnv(b.AccountName)
 	if err != nil {
-		log.Fatalln(err)
+		return "", err
 	}
-	return accountName
+	return accountName, nil
 }
 
 // GetToken return token from environment or config file
-func (b *BotConfig) GetToken() string {
+func (b *BotConfig) GetToken() (string, error) {
 	token, err := getFieldOrEnv(b.AccountToken)
 	if err != nil {
-		log.Fatalln(err)
+		return "", err
 	}
-	return token
+	return token, nil
 }

@@ -13,11 +13,10 @@ import (
 
 func main() {
 	flags := NewFlagsCLI()
-	err := flags.VerifyPath()
+	config, err := NewBotConfig(flags.ConfigPath)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	config := NewBotConfig(flags.ConfigPath)
 
 	esClient, err := elastic.NewClient()
 	if err != nil {
@@ -40,8 +39,15 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-
-	var twClient = twitch.NewClient(config.GetAccountName(), config.GetToken())
+	accountName, err := config.GetAccountName()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	token, err := config.GetToken()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	var twClient = twitch.NewClient(accountName, token)
 	twClient.TLS = false
 
 	twClient.OnPrivateMessage(func(message twitch.PrivateMessage) {

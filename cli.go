@@ -1,10 +1,7 @@
 package main
 
 import (
-	"errors"
 	"flag"
-	"os"
-	"strings"
 )
 
 // FlagsCLI store cli flags after parse
@@ -23,17 +20,4 @@ func NewFlagsCLI() *FlagsCLI {
 		ConfigPath:  *flagConfig,
 		DebugOutput: *flagDebug,
 	}
-}
-
-// VerifyPath verifies existance ConfigPath
-func (f *FlagsCLI) VerifyPath() error {
-	if _, err := os.Stat(f.ConfigPath); os.IsNotExist(err) {
-		return errors.New("file does not exists")
-	}
-
-	if !strings.HasSuffix(f.ConfigPath, ".yml") && !strings.HasSuffix(f.ConfigPath, ".yaml") {
-		return errors.New("unsupported file format")
-	}
-
-	return nil
 }
