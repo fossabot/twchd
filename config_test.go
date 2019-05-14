@@ -19,7 +19,7 @@ func TestVerifyPath_Space(t *testing.T) {
 	}
 }
 func TestVerifyPath_Exists(t *testing.T) {
-	var actual = VerifyPath("example/vanya83.yml")
+	var actual = VerifyPath("config/vanya83.yml")
 	if actual != nil {
 		t.Fatal("file exists")
 	}

@@ -8,4 +8,4 @@ Twitch chat message grabber
 - make generate
 - make image
 - docker-compose up -d
-- docker run --network=host -e TWITCH_ACCOUNT="XXX" -e TWITCH_OAUTH="oauth:YYY" $USER/twchd:2.0
+- docker run --network=host -e TWITCH_ACCOUNT="XXX" -e TWITCH_OAUTH="oauth:YYY" -v $PWD/config/ZZZ.yml:/app/config.yml $USER/twchd:2.1

@@ -28,3 +28,8 @@ generate: assets/
 test:
 	@echo "Running tests..."
 	@go test ./...
+
+coverage-report:
+	go test -coverprofile /tmp/${PROJECTNAME}-general.cover
+	cat /tmp/${PROJECTNAME}-general.cover | grep -v 'assets.go' > /tmp/${PROJECTNAME}.cover
+	go tool cover -html=/tmp/${PROJECTNAME}.cover
