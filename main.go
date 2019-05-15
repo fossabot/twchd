@@ -18,7 +18,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	esClient, err := elastic.NewClient()
+	esClient, err := elastic.NewClient(elastic.SetURL(config.Address), elastic.SetSniff(false))
 	if err != nil {
 		log.Fatalln(err)
 	}

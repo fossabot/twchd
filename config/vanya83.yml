@@ -11,6 +11,9 @@ join_to:
   - vanya83
 
 ## Elastic Client settings
+# Connection address
+address: http://192.168.88.254:9200
+
 # Name of index for creation
 index: vanya83
 

@@ -29,6 +29,7 @@ type BotConfig struct {
 	Index        string   `yaml:"index"`
 	Type         string   `yaml:"type"`
 	Pipeline     string   `yaml:"pipeline"`
+	Address      string   `yaml:"address"`
 }
 
 // NewBotConfig takes config file and return BotConfig struct

@@ -2,4 +2,3 @@
 bin/
 vendor/
 assets.go
-.secret

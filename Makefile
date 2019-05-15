@@ -15,7 +15,7 @@ build: generate test
 clean:
 	@echo "Cleaning build cache, binaries and assets..."
 	@go clean
-	@rm -f $(GOBIN)/$(PROJECTNAME) $(GOBASE)/assets.go
+	@rm -f $(GOBIN)/$(PROJECTNAME) $(GOBASE)/assets.go $(GOBIN)/$(PROJECTNAME)-armv7
 
 image: build
 	@echo "Building docker image..."
@@ -33,3 +33,7 @@ coverage-report:
 	go test -coverprofile /tmp/${PROJECTNAME}-general.cover
 	cat /tmp/${PROJECTNAME}-general.cover | grep -v 'assets.go' > /tmp/${PROJECTNAME}.cover
 	go tool cover -html=/tmp/${PROJECTNAME}.cover
+
+build-arm: generate test
+	@echo "Building binary for ARMv7..."
+	GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=0 go build $(LDFLAGS) -o $(GOBIN)/$(PROJECTNAME)-armv7 $(GOSOURCE)

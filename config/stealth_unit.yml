@@ -11,6 +11,9 @@ join_to:
   - stealth_unit
 
 ## Elastic Client settings
+# Connection address
+address: http://192.168.88.254:9200
+
 # Name of index for creation
 index: stealth_unit
 

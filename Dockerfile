@@ -1,4 +1,4 @@
 FROM alpine:latest
 WORKDIR /app
-COPY bin /app/
-ENTRYPOINT [ "/app/twchd", "-config", "/app/config.yml", "-debug" ]
+COPY bin/twchd /app
+ENTRYPOINT [ "/app/twchd", "-config", "/app/config.yml" ]
