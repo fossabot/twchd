@@ -5,10 +5,11 @@ GOTESTFILES	:= 	$(wildcard *_test.go)
 GOSOURCE 	:= 	$(filter-out $(GOTESTFILES),$(wildcard *.go))
 VERSION		:=	$(shell git describe --tags)
 LDFLAGS 	:= 	-ldflags "-s -w"
+DOCKERREPO	:=	127.0.0.1:1901
 
 .PHONY: build clean image generate test
 
-build: generate test
+build: dep generate test
 	@echo "Building binary..."
 	CGO_ENABLED=0 go build $(LDFLAGS) -o $(GOBIN)/$(PROJECTNAME) $(GOSOURCE)
 
@@ -19,7 +20,7 @@ clean:
 
 image: build
 	@echo "Building docker image..."
-	docker build -t $(USER)/$(PROJECTNAME):$(VERSION) .
+	docker build -t $(DOCKERREPO)/$(PROJECTNAME):$(VERSION) .
 
 generate: assets/
 	@echo "Embedding statics..."
@@ -34,6 +35,10 @@ coverage-report:
 	cat /tmp/${PROJECTNAME}-general.cover | grep -v 'assets.go' > /tmp/${PROJECTNAME}.cover
 	go tool cover -html=/tmp/${PROJECTNAME}.cover
 
-build-arm: generate test
+build-arm: dep generate test
 	@echo "Building binary for ARMv7..."
 	GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=0 go build $(LDFLAGS) -o $(GOBIN)/$(PROJECTNAME)-armv7 $(GOSOURCE)
+
+dep: Gopkg.toml Gopkg.lock
+	@echo "Generating dependencies..."
+	@dep ensure
