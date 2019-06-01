@@ -32,7 +32,6 @@ type BotConfig struct {
 	Pipeline     string   `yaml:"pipeline"`
 	Address      string   `yaml:"address"`
 	Period       int      `yaml:"period"`
-	Messages     int      `yaml:"n_messages"`
 }
 
 // NewBotConfig takes config file and return BotConfig struct

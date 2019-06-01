@@ -50,7 +50,7 @@ func main() {
 	var twClient = twitch.NewClient(accountName, token)
 	twClient.TLS = false
 
-	var esBulker = esClient.Bulk()
+	var bulker = esClient.Bulk()
 
 	twClient.OnPrivateMessage(func(message twitch.PrivateMessage) {
 		var req = elastic.NewBulkIndexRequest().
@@ -58,7 +58,7 @@ func main() {
 			Type(config.Type).
 			Pipeline(config.Pipeline).
 			Doc(MakeRawMsg(&message))
-		esBulker.Add(req)
+		bulker.Add(req)
 	})
 
 	go func() {
@@ -66,7 +66,7 @@ func main() {
 		for {
 			select {
 			case <-ticker.C:
-				FlushMsgs(esCtx, esBulker, config.Messages)
+				bulker.Do(esCtx)
 			}
 		}
 	}()
@@ -86,10 +86,4 @@ func MakeRawMsg(message *twitch.PrivateMessage) string {
 	fmt.Fprintf(&builder, "%s,%s,", message.User.DisplayName, message.User.ID)
 	fmt.Fprintf(&builder, "%s,%s,%s\"}", message.Tags["turbo"], message.Tags["subscriber"], message.Tags["mod"])
 	return builder.String()
-}
-
-func FlushMsgs(ctx context.Context, bulker *elastic.BulkService, queueSize int) {
-	if bulker.NumberOfActions() > queueSize {
-		bulker.Do(ctx)
-	}
 }

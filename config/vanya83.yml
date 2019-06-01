@@ -25,7 +25,4 @@ pipeline: msg-parser
 
 ## Bulk settings
 # Period of insertion, seconds
-period: 5
-
-# Count of messages before bulking
-n_messages: 5
+period: 10
