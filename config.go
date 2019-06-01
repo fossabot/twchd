@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/go-yaml/yaml"
 )
@@ -30,6 +31,8 @@ type BotConfig struct {
 	Type         string   `yaml:"type"`
 	Pipeline     string   `yaml:"pipeline"`
 	Address      string   `yaml:"address"`
+	Period       int      `yaml:"period"`
+	Messages     int      `yaml:"n_messages"`
 }
 
 // NewBotConfig takes config file and return BotConfig struct
@@ -85,4 +88,8 @@ func (b *BotConfig) GetToken() (string, error) {
 		return "", err
 	}
 	return token, nil
+}
+
+func (b *BotConfig) GetPeriod() time.Duration {
+	return time.Duration(b.Period)
 }

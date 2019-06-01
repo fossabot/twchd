@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"strings"
+	"time"
 
 	"github.com/gempir/go-twitch-irc"
 	"github.com/olivere/elastic"
@@ -50,33 +50,46 @@ func main() {
 	var twClient = twitch.NewClient(accountName, token)
 	twClient.TLS = false
 
-	twClient.OnPrivateMessage(func(message twitch.PrivateMessage) {
-		var builder strings.Builder
-		fmt.Fprintf(&builder, "{\"msg\": \"%s,%s,", message.RoomID, message.Channel)
-		fmt.Fprintf(&builder, "%s,%d,", message.Message, message.Time.Unix())
-		fmt.Fprintf(&builder, "%s,%s,", message.User.DisplayName, message.User.ID)
-		fmt.Fprintf(&builder, "%s,%s,%s\"}", message.Tags["turbo"], message.Tags["subscriber"], message.Tags["mod"])
-		var message2 = builder.String()
+	var esBulker = esClient.Bulk()
 
-		resp, err := esClient.Index().
+	twClient.OnPrivateMessage(func(message twitch.PrivateMessage) {
+		var req = elastic.NewBulkIndexRequest().
 			Index(config.Index).
 			Type(config.Type).
 			Pipeline(config.Pipeline).
-			BodyString(message2).
-			Do(esCtx)
-		if err != nil {
-			return
-		}
-
-		if flags.DebugOutput {
-			fmt.Fprintf(os.Stderr, "[%v] %v: %v\n", resp.Id, message.User.DisplayName, message.Message)
-		}
+			Doc(MakeRawMsg(&message))
+		esBulker.Add(req)
 	})
+
+	go func() {
+		var ticker = time.NewTicker(config.GetPeriod() * time.Second)
+		for {
+			select {
+			case <-ticker.C:
+				FlushMsgs(esCtx, esBulker, config.Messages)
+			}
+		}
+	}()
 
 	for _, channel := range config.AccountsList {
 		twClient.Join(channel)
 	}
 	if twClient.Connect() != nil {
 		log.Fatalln(err)
+	}
+}
+
+func MakeRawMsg(message *twitch.PrivateMessage) string {
+	var builder strings.Builder
+	fmt.Fprintf(&builder, "{\"msg\": \"%s,%s,", message.RoomID, message.Channel)
+	fmt.Fprintf(&builder, "%s,%d,", message.Message, message.Time.Unix())
+	fmt.Fprintf(&builder, "%s,%s,", message.User.DisplayName, message.User.ID)
+	fmt.Fprintf(&builder, "%s,%s,%s\"}", message.Tags["turbo"], message.Tags["subscriber"], message.Tags["mod"])
+	return builder.String()
+}
+
+func FlushMsgs(ctx context.Context, bulker *elastic.BulkService, queueSize int) {
+	if bulker.NumberOfActions() > queueSize {
+		bulker.Do(ctx)
 	}
 }

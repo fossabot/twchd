@@ -1,4 +1,4 @@
-PROJECTNAME	:=	$(shell basename "$(PWD)")d
+PROJECTNAME	:=	$(shell basename "$(PWD)")
 GOBASE 		:= 	$(shell pwd)
 GOBIN 		:= 	$(GOBASE)/bin
 GOTESTFILES	:= 	$(wildcard *_test.go)
@@ -7,7 +7,7 @@ VERSION		:=	$(shell git describe --tags)
 LDFLAGS 	:= 	-ldflags "-s -w"
 DOCKERREPO	:=	127.0.0.1:1901
 
-.PHONY: build clean image generate test
+.PHONY: build clean image generate test dep
 
 build: dep generate test
 	@echo "Building binary..."
