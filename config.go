@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
@@ -89,4 +90,8 @@ func (b *BotConfig) GetAddress() net.IP {
 
 func (b *BotConfig) GetDBPassword() (string, error) {
 	return getFieldOrEnv(b.Password)
+}
+
+func (b *BotConfig) Dump() string {
+	return fmt.Sprintf("%+v\n", b)
 }

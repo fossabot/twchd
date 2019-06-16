@@ -2,13 +2,14 @@ package main
 
 import (
 	"flag"
-	"log"
 
 	"github.com/gempir/go-twitch-irc"
 	"go.uber.org/zap"
 )
 
-var configFlag = flag.String("config", "", "path to config file")
+var (
+	configFlag = flag.String("config", "", "path to config file")
+)
 
 func main() {
 	flag.Parse()
@@ -16,16 +17,16 @@ func main() {
 
 	config, err := NewBotConfig(*configFlag)
 	if err != nil {
-		log.Fatalln(err)
+		logger.Fatal("Can not load config", zap.String("path", *configFlag), zap.String("error", err.Error()))
 	}
 
 	accountName, err := config.GetAccountName()
 	if err != nil {
-		log.Fatalln(err)
+		logger.Fatal("Can not get 'AccountName'", zap.String("config", config.Dump()), zap.String("error", err.Error()))
 	}
 	token, err := config.GetToken()
 	if err != nil {
-		log.Fatalln(err)
+		logger.Fatal("Can not get 'AccountToken'", zap.String("config", config.Dump()), zap.String("error", err.Error()))
 	}
 	var client = twitch.NewClient(accountName, token)
 	client.TLS = false
@@ -38,6 +39,6 @@ func main() {
 		client.Join(channel)
 	}
 	if client.Connect() != nil {
-		log.Fatalln(err)
+		logger.Fatal("Error during twitch connection")
 	}
 }
