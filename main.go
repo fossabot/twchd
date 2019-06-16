@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"strings"
@@ -11,9 +12,15 @@ import (
 	"github.com/olivere/elastic"
 )
 
+var (
+	configFlag = flag.String("config", "", "path to config file")
+	debugFlag  = flag.Bool("debug", false, "addition output to stderr")
+)
+
 func main() {
-	flags := NewFlagsCLI()
-	config, err := NewBotConfig(flags.ConfigPath)
+	flag.Parse()
+
+	config, err := NewBotConfig(*configFlag)
 	if err != nil {
 		log.Fatalln(err)
 	}
