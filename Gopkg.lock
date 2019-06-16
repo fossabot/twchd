@@ -17,46 +17,12 @@
   revision = "51d6538a90f86fe93ac480b35f37b2be17fef232"
   version = "v2.2.2"
 
-[[projects]]
-  branch = "master"
-  digest = "1:8a82e4b519fb94b83923e0a6fae6aced276c887781b94b6a00c90b3dad240ba1"
-  name = "github.com/mailru/easyjson"
-  packages = [
-    ".",
-    "buffer",
-    "jlexer",
-    "jwriter",
-  ]
-  pruneopts = "UT"
-  revision = "1ea4449da9834f4d333f1cc461c374aea217d249"
-
-[[projects]]
-  digest = "1:6e5f35a3bcea0530accd5230905dd9ef3ce7c7d8ee0f76f5828605377d86250a"
-  name = "github.com/olivere/elastic"
-  packages = [
-    ".",
-    "config",
-    "uritemplates",
-  ]
-  pruneopts = "UT"
-  revision = "8a3f2cdf773521f77a2b9517d131c6cf28be6ca1"
-  version = "v6.2.17"
-
-[[projects]]
-  digest = "1:cf31692c14422fa27c83a05292eb5cbe0fb2775972e8f1f8446a71549bd8980b"
-  name = "github.com/pkg/errors"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "ba968bfe8b2f7e042a574c888954fccecfa385b4"
-  version = "v0.8.1"
-
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
     "github.com/gempir/go-twitch-irc",
     "github.com/go-yaml/yaml",
-    "github.com/olivere/elastic",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -32,7 +32,7 @@ test:
 
 coverage-report:
 	go test -coverprofile /tmp/${PROJECTNAME}-general.cover
-	cat /tmp/${PROJECTNAME}-general.cover | grep -v 'assets.go' > /tmp/${PROJECTNAME}.cover
+	grep -v 'assets.go' /tmp/${PROJECTNAME}-general.cover > /tmp/${PROJECTNAME}.cover
 	go tool cover -html=/tmp/${PROJECTNAME}.cover
 
 build-arm: dep generate test

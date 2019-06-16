@@ -3,10 +3,10 @@ package main
 import (
 	"errors"
 	"io/ioutil"
+	"net"
 	"os"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/go-yaml/yaml"
 )
@@ -24,14 +24,16 @@ func VerifyPath(filename string) error {
 
 // BotConfig struct represent config from file
 type BotConfig struct {
+	// Twitch Client settings
 	AccountName  string   `yaml:"account_name"`
 	AccountToken string   `yaml:"account_token"`
 	AccountsList []string `yaml:"join_to"`
-	Index        string   `yaml:"index"`
-	Type         string   `yaml:"type"`
-	Pipeline     string   `yaml:"pipeline"`
-	Address      string   `yaml:"address"`
-	Period       int      `yaml:"period"`
+	// Postgres DB settings
+	Address  string `yaml:"address"`
+	Port     int    `yaml:"port"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+	Database string `yaml:"database"`
 }
 
 // NewBotConfig takes config file and return BotConfig struct
@@ -73,22 +75,18 @@ func getFieldOrEnv(field string) (string, error) {
 
 // GetAccountName return account name from environment or config file
 func (b *BotConfig) GetAccountName() (string, error) {
-	accountName, err := getFieldOrEnv(b.AccountName)
-	if err != nil {
-		return "", err
-	}
-	return accountName, nil
+	return getFieldOrEnv(b.AccountName)
 }
 
 // GetToken return token from environment or config file
 func (b *BotConfig) GetToken() (string, error) {
-	token, err := getFieldOrEnv(b.AccountToken)
-	if err != nil {
-		return "", err
-	}
-	return token, nil
+	return getFieldOrEnv(b.AccountToken)
 }
 
-func (b *BotConfig) GetPeriod() time.Duration {
-	return time.Duration(b.Period)
+func (b *BotConfig) GetAddress() net.IP {
+	return net.ParseIP(b.Address)
+}
+
+func (b *BotConfig) GetDBPassword() (string, error) {
+	return getFieldOrEnv(b.Password)
 }
