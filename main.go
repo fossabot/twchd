@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"time"
 
 	"github.com/gempir/go-twitch-irc"
 	"go.uber.org/zap"
@@ -31,14 +32,22 @@ func main() {
 	var client = twitch.NewClient(accountName, token)
 	client.TLS = false
 
-	client.OnPrivateMessage(func(message twitch.PrivateMessage) {
-
-	})
+	// client.OnPrivateMessage()
 
 	for _, channel := range config.AccountsList {
 		client.Join(channel)
 	}
-	if client.Connect() != nil {
-		logger.Fatal("Error during twitch connection")
+	RetryConnect(client, logger, 10, 6)
+}
+
+func RetryConnect(client *twitch.Client, logger *zap.Logger, period int, attempts int) {
+	var ticker = time.NewTicker(time.Duration(period) * time.Second)
+	for attempt := 0; attempt < attempts; attempt++ {
+		if client.Connect() != nil {
+			logger.Warn("Error during connection to twitch", zap.Int("attempt", attempt), zap.Int("timeout", period))
+		}
+		<-ticker.C
 	}
+	ticker.Stop()
+	logger.Fatal("Error during connection to twitch. Attempts exceeded")
 }
