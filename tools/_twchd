@@ -1,8 +1,8 @@
 #compdef twchd
 
 _twchd_args=(
-    '-config[path to config file]:config:_files'
-    '-debug[show debug information]'
+    "-config[path to config file]:config:_files"
+    "-debug[level of debug verbosity]:verbose:((1\:'Production' 2\:'Development' 3\:'Example'))"
 )
 
 _twchd() {

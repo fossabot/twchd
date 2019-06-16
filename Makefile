@@ -7,7 +7,7 @@ VERSION		:=	$(shell git describe --tags)
 LDFLAGS 	:= 	-ldflags "-s -w"
 DOCKERREPO	:=	127.0.0.1:1901
 
-.PHONY: build clean image generate test dep
+.PHONY: build clean image generate test dep zsh
 
 build: dep generate test
 	@echo "Building binary..."
@@ -42,3 +42,6 @@ build-arm: dep generate test
 dep: Gopkg.toml Gopkg.lock
 	@echo "Generating dependencies..."
 	@dep ensure
+
+zsh:
+	cp $(GOBASE)/tools/_twchd /usr/share/zsh/site-functions
