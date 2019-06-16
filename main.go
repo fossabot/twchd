@@ -5,15 +5,14 @@ import (
 	"log"
 
 	"github.com/gempir/go-twitch-irc"
+	"go.uber.org/zap"
 )
 
-var (
-	configFlag = flag.String("config", "", "path to config file")
-	debugFlag  = flag.Bool("debug", false, "addition output to stderr")
-)
+var configFlag = flag.String("config", "", "path to config file")
 
 func main() {
 	flag.Parse()
+	logger, _ := zap.NewDevelopment()
 
 	config, err := NewBotConfig(*configFlag)
 	if err != nil {

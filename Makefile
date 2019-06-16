@@ -1,41 +1,27 @@
 PROJECTNAME	:=	$(shell basename "$(PWD)")
 GOBASE 		:= 	$(shell pwd)
 GOBIN 		:= 	$(GOBASE)/bin
-GOTESTFILES	:= 	$(wildcard *_test.go)
-GOSOURCE 	:= 	$(filter-out $(GOTESTFILES),$(wildcard *.go))
+GOSOURCE 	:= 	$(wildcard *.go)
 VERSION		:=	$(shell git describe --tags)
 LDFLAGS 	:= 	-ldflags "-s -w"
-DOCKERREPO	:=	127.0.0.1:1901
 
-.PHONY: build clean image generate test dep zsh
 
-build: dep generate test
+.PHONY: build clean image dep zsh build-arm
+
+build: dep
 	@echo "Building binary..."
 	CGO_ENABLED=0 go build $(LDFLAGS) -o $(GOBIN)/$(PROJECTNAME) $(GOSOURCE)
 
 clean:
-	@echo "Cleaning build cache, binaries and assets..."
+	@echo "Cleaning build cache and binaries..."
 	@go clean
-	@rm -f $(GOBIN)/$(PROJECTNAME) $(GOBASE)/assets.go $(GOBIN)/$(PROJECTNAME)-armv7
+	@rm -f $(GOBIN)/$(PROJECTNAME) $(GOBIN)/$(PROJECTNAME)-armv7
 
 image: build
 	@echo "Building docker image..."
-	docker build -t $(DOCKERREPO)/$(PROJECTNAME):$(VERSION) .
+	docker build -t $(PROJECTNAME):$(VERSION) .
 
-generate: assets/
-	@echo "Embedding statics..."
-	go-bindata -o assets.go assets/*
-
-test:
-	@echo "Running tests..."
-	@go test ./...
-
-coverage-report:
-	go test -coverprofile /tmp/${PROJECTNAME}-general.cover
-	grep -v 'assets.go' /tmp/${PROJECTNAME}-general.cover > /tmp/${PROJECTNAME}.cover
-	go tool cover -html=/tmp/${PROJECTNAME}.cover
-
-build-arm: dep generate test
+build-arm: dep
 	@echo "Building binary for ARMv7..."
 	GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=0 go build $(LDFLAGS) -o $(GOBIN)/$(PROJECTNAME)-armv7 $(GOSOURCE)
 

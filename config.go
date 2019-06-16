@@ -11,8 +11,8 @@ import (
 	"github.com/go-yaml/yaml"
 )
 
-// VerifyPath verifies existance file
-func VerifyPath(filename string) error {
+// VerifyConfigPath verifies existance file
+func VerifyConfigPath(filename string) error {
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		return errors.New("file does not exists")
 	}
@@ -38,7 +38,7 @@ type BotConfig struct {
 
 // NewBotConfig takes config file and return BotConfig struct
 func NewBotConfig(filename string) (config *BotConfig, err error) {
-	err = VerifyPath(filename)
+	err = VerifyConfigPath(filename)
 	if err != nil {
 		return nil, err
 	}
