@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"os"
 	"regexp"
 	"strings"
@@ -82,10 +81,6 @@ func (b *BotConfig) GetAccountName() (string, error) {
 // GetToken return token from environment or config file
 func (b *BotConfig) GetToken() (string, error) {
 	return getFieldOrEnv(b.AccountToken)
-}
-
-func (b *BotConfig) GetAddress() net.IP {
-	return net.ParseIP(b.Address)
 }
 
 func (b *BotConfig) GetDBPassword() (string, error) {
