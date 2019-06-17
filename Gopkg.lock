@@ -2,12 +2,12 @@
 
 
 [[projects]]
-  digest = "1:496e620f54c5204133a0e4229d703b37b2c8ffbc82368c530539475c350f08ad"
+  digest = "1:e2e5733e94268fee2ddf04477ed8d84682d48f8a0c5ef418804fbc49a0422568"
   name = "github.com/gempir/go-twitch-irc"
   packages = ["."]
   pruneopts = "UT"
-  revision = "bf886a861b645c45afddb889e13362b3737455f9"
-  version = "2.1.0"
+  revision = "9616daf48b5f75375849019320e5d737f528bab0"
+  version = "v2.1.1"
 
 [[projects]]
   digest = "1:4d2e5a73dc1500038e504a8d78b986630e3626dc027bc030ba5c75da257cdb96"
