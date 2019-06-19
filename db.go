@@ -10,8 +10,8 @@ import (
 )
 
 type DBConn struct {
-	Conn *sql.DB
-	mu   *sync.RWMutex
+	*sql.DB
+	mu *sync.RWMutex
 }
 
 func NewDBConn(cfg *BotConfig) (*DBConn, error) {
@@ -20,8 +20,8 @@ func NewDBConn(cfg *BotConfig) (*DBConn, error) {
 		return nil, err
 	}
 	return &DBConn{
-		Conn: db,
-		mu:   new(sync.RWMutex),
+		DB: db,
+		mu: new(sync.RWMutex),
 	}, nil
 }
 
@@ -48,18 +48,14 @@ func (c *DBConn) Reconnect(cfg *BotConfig) error {
 		return err
 	}
 	c.Close()
-	c.Conn = db
+	c.DB = db
 	return nil
-}
-
-func (c *DBConn) Close() error {
-	return c.Conn.Close()
 }
 
 func (c *DBConn) AddData(msg *twitch.PrivateMessage) (sql.Result, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return c.Conn.Exec("CALL add_data($1, $2, $3, $4, $5, $6, $7, $8)",
+	return c.Exec("CALL add_data($1, $2, $3, $4, $5, $6, $7, $8)",
 		msg.Message, msg.ID, msg.Time, msg.Channel, msg.RoomID, msg.User.DisplayName, msg.User.ID,
 		msg.Tags["turbo"]+msg.Tags["mod"]+msg.Tags["subscriber"])
 }

@@ -21,7 +21,7 @@ var (
 	client     *twitch.Client
 )
 
-func init() {
+func main() {
 	flag.Parse()
 	logger, _ = zap.NewDevelopment()
 
@@ -36,6 +36,11 @@ func init() {
 			logger.Fatal("Can not create database connection", zap.String("config", config.Dump()), zap.String("error", err.Error()))
 		}
 	}()
+
+	client, err = NewTwitchClient(config)
+	if err != nil {
+		logger.Fatal("Can not create twitch client", zap.String("config", config.Dump()), zap.String("error", err.Error()))
+	}
 
 	s := make(chan os.Signal, 1)
 	signal.Notify(s, syscall.SIGHUP)
@@ -52,21 +57,13 @@ func init() {
 			if err != nil {
 				logger.Fatal("Can not create new connection to database", zap.String("config", config.Dump()), zap.String("error", err.Error()))
 			}
+
+			client, err = NewTwitchClient(config)
+			if err != nil {
+				logger.Fatal("Can not recreate twitch client", zap.String("config", config.Dump()), zap.String("error", err.Error()))
+			}
 		}
 	}()
-}
-
-func main() {
-	accountName, err := config.GetAccountName()
-	if err != nil {
-		logger.Fatal("Can not get 'AccountName'", zap.String("config", config.Dump()), zap.String("error", err.Error()))
-	}
-	token, err := config.GetToken()
-	if err != nil {
-		logger.Fatal("Can not get 'AccountToken'", zap.String("config", config.Dump()), zap.String("error", err.Error()))
-	}
-	client = twitch.NewClient(accountName, token)
-	client.TLS = false
 
 	client.OnPrivateMessage(func(msg twitch.PrivateMessage) {
 		_, err = conn.AddData(&msg)
@@ -75,10 +72,26 @@ func main() {
 		}
 	})
 
-	for _, channel := range config.GetAccountsList() {
+	RetryConnect(client, logger, 10, 6)
+}
+
+func NewTwitchClient(cfg *BotConfig) (*twitch.Client, error) {
+	accountName, err := cfg.GetAccountName()
+	if err != nil {
+		return nil, err
+	}
+	token, err := cfg.GetToken()
+	if err != nil {
+		return nil, err
+	}
+	var client = twitch.NewClient(accountName, token)
+	client.TLS = false
+
+	for _, channel := range cfg.GetAccountsList() {
 		client.Join(channel)
 	}
-	RetryConnect(client, logger, 10, 6)
+
+	return client, nil
 }
 
 func RetryConnect(client *twitch.Client, logger *zap.Logger, period int, attempts int) {
