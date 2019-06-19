@@ -10,33 +10,56 @@ import (
 )
 
 type DBConn struct {
-	c *sql.DB
-	m *sync.RWMutex
+	Conn *sql.DB
+	mu   *sync.RWMutex
 }
 
 func NewDBConn(cfg *BotConfig) (*DBConn, error) {
+	db, err := Connect(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return &DBConn{
+		Conn: db,
+		mu:   new(sync.RWMutex),
+	}, nil
+}
+
+func Connect(cfg *BotConfig) (*sql.DB, error) {
 	passwd, err := cfg.GetDBPassword()
 	if err != nil {
 		return nil, err
 	}
 	var connStr = fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		cfg.Address, cfg.Port, cfg.Username, passwd, cfg.Database)
+		cfg.GetAddress(), cfg.GetPort(), cfg.GetUsername(), passwd, cfg.GetDatabase())
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, err
 	}
-	return &DBConn{
-		c: db,
-		m: new(sync.RWMutex),
-	}, nil
+	return db, err
+}
+
+func (c *DBConn) Reconnect(cfg *BotConfig) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	db, err := Connect(cfg)
+	if err != nil {
+		return err
+	}
+	c.Close()
+	c.Conn = db
+	return nil
 }
 
 func (c *DBConn) Close() error {
-	return c.c.Close()
+	return c.Conn.Close()
 }
 
 func (c *DBConn) AddData(msg *twitch.PrivateMessage) (sql.Result, error) {
-	return c.c.Exec("CALL add_data($1, $2, $3, $4, $5, $6, $7, $8)",
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.Conn.Exec("CALL add_data($1, $2, $3, $4, $5, $6, $7, $8)",
 		msg.Message, msg.ID, msg.Time, msg.Channel, msg.RoomID, msg.User.DisplayName, msg.User.ID,
 		msg.Tags["turbo"]+msg.Tags["mod"]+msg.Tags["subscriber"])
 }

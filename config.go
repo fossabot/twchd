@@ -25,7 +25,7 @@ func VerifyConfigPath(filename string) error {
 
 // BotConfig struct represent config from file
 type BotConfig struct {
-	M *sync.RWMutex
+	mu *sync.RWMutex
 	// Twitch Client settings
 	AccountName  string   `yaml:"account_name"`
 	AccountToken string   `yaml:"account_token"`
@@ -41,7 +41,7 @@ type BotConfig struct {
 // NewBotConfig takes config file and return BotConfig struct
 func NewBotConfig(filename string) (*BotConfig, error) {
 	var config = &BotConfig{
-		M: new(sync.Mutex),
+		mu: new(sync.RWMutex),
 	}
 	var err = config.Load(filename)
 	if err != nil {
@@ -59,6 +59,9 @@ func (b *BotConfig) Load(filename string) error {
 	if err != nil {
 		return err
 	}
+
+	b.mu.Lock()
+	defer b.mu.Unlock()
 	err = yaml.Unmarshal(rawConfig, b)
 	if err != nil {
 		return err
@@ -87,18 +90,55 @@ func getFieldOrEnv(field string) (string, error) {
 
 // GetAccountName return account name from environment or config file
 func (b *BotConfig) GetAccountName() (string, error) {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
 	return getFieldOrEnv(b.AccountName)
 }
 
 // GetToken return token from environment or config file
 func (b *BotConfig) GetToken() (string, error) {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
 	return getFieldOrEnv(b.AccountToken)
+}
+func (b *BotConfig) GetAccountsList() []string {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return b.AccountsList
+}
+
+func (b *BotConfig) GetAddress() string {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return b.Address
+}
+
+func (b *BotConfig) GetPort() int {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return b.Port
+}
+
+func (b *BotConfig) GetUsername() string {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return b.Username
 }
 
 func (b *BotConfig) GetDBPassword() (string, error) {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
 	return getFieldOrEnv(b.Password)
 }
 
+func (b *BotConfig) GetDatabase() string {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return b.Database
+}
+
 func (b *BotConfig) Dump() string {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
 	return fmt.Sprintf("%+v\n", b)
 }

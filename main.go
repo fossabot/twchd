@@ -30,24 +30,6 @@ func init() {
 		logger.Fatal("Can not load config", zap.String("path", *configFlag), zap.String("error", err.Error()))
 	}
 
-	s := make(chan os.Signal, 1)
-	signal.Notify(s, syscall.SIGHUP)
-
-	go func() {
-		for {
-			<-s
-			config.M.Lock()
-			err = config.Load(*configFlag)
-			if err != nil {
-				logger.Fatal("Can not reload config", zap.String("path", *configFlag), zap.String("error", err.Error()))
-			}
-			config.M.Unlock()
-
-		}
-	}()
-}
-
-func main() {
 	go func() {
 		conn, err = NewDBConn(config)
 		if err != nil {
@@ -55,6 +37,26 @@ func main() {
 		}
 	}()
 
+	s := make(chan os.Signal, 1)
+	signal.Notify(s, syscall.SIGHUP)
+
+	go func() {
+		for {
+			<-s
+			err = config.Load(*configFlag)
+			if err != nil {
+				logger.Fatal("Can not reload config", zap.String("path", *configFlag), zap.String("error", err.Error()))
+			}
+
+			err = conn.Reconnect(config)
+			if err != nil {
+				logger.Fatal("Can not create new connection to database", zap.String("config", config.Dump()), zap.String("error", err.Error()))
+			}
+		}
+	}()
+}
+
+func main() {
 	accountName, err := config.GetAccountName()
 	if err != nil {
 		logger.Fatal("Can not get 'AccountName'", zap.String("config", config.Dump()), zap.String("error", err.Error()))
@@ -73,7 +75,7 @@ func main() {
 		}
 	})
 
-	for _, channel := range config.AccountsList {
+	for _, channel := range config.GetAccountsList() {
 		client.Join(channel)
 	}
 	RetryConnect(client, logger, 10, 6)
