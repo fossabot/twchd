@@ -9,6 +9,8 @@ account_token: ${TWITCH_OAUTH}
 # List accounts for listening
 join_to:
   - stealth_unit
+  - yesitshappy
+  - allenfallen
 
 ## Postgres DB settings
 address: 127.0.0.1

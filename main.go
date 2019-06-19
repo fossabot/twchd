@@ -53,12 +53,12 @@ func main() {
 	var client = twitch.NewClient(accountName, token)
 	client.TLS = false
 
+	var queryStr = "CALL add_data($1, $2, $3, $4, $5, $6, $7, $8)"
 	<-initDBDone
 	client.OnPrivateMessage(func(msg twitch.PrivateMessage) {
-		var queryStr = "CALL add_data($1, $2, $3, $4, $5, $6, $7, $8::BIT(3))"
 		var role = msg.Tags["turbo"] + msg.Tags["mod"] + msg.Tags["subscriber"]
 
-		_, err := db.Query(queryStr, msg.Message, msg.ID, msg.Time, msg.Channel, msg.RoomID, msg.User.DisplayName, msg.User.ID, role)
+		_, err := db.Exec(queryStr, msg.Message, msg.ID, msg.Time, msg.Channel, msg.RoomID, msg.User.DisplayName, msg.User.ID, role)
 		if err != nil {
 			logger.Warn("Can not make query to database", zap.String("error", err.Error()))
 		}
