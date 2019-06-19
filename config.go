@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/go-yaml/yaml"
 )
@@ -24,6 +25,7 @@ func VerifyConfigPath(filename string) error {
 
 // BotConfig struct represent config from file
 type BotConfig struct {
+	M *sync.RWMutex
 	// Twitch Client settings
 	AccountName  string   `yaml:"account_name"`
 	AccountToken string   `yaml:"account_token"`
@@ -37,21 +39,31 @@ type BotConfig struct {
 }
 
 // NewBotConfig takes config file and return BotConfig struct
-func NewBotConfig(filename string) (config *BotConfig, err error) {
-	err = VerifyConfigPath(filename)
+func NewBotConfig(filename string) (*BotConfig, error) {
+	var config = &BotConfig{
+		M: new(sync.Mutex),
+	}
+	var err = config.Load(filename)
 	if err != nil {
 		return nil, err
+	}
+	return config, nil
+}
+
+func (b *BotConfig) Load(filename string) error {
+	var err = VerifyConfigPath(filename)
+	if err != nil {
+		return err
 	}
 	rawConfig, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	config = new(BotConfig)
-	err = yaml.Unmarshal(rawConfig, config)
+	err = yaml.Unmarshal(rawConfig, b)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return
+	return nil
 }
 
 func getFieldOrEnv(field string) (string, error) {

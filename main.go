@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-
 	"time"
 
 	"github.com/gempir/go-twitch-irc"
@@ -31,19 +30,24 @@ func init() {
 		logger.Fatal("Can not load config", zap.String("path", *configFlag), zap.String("error", err.Error()))
 	}
 
-	reload := make(chan os.Signal, 1)
-	signal.Notify(reload, syscall.SIGHUP)
+	s := make(chan os.Signal, 1)
+	signal.Notify(s, syscall.SIGHUP)
 
 	go func() {
 		for {
-			<-reload
+			<-s
+			config.M.Lock()
+			err = config.Load(*configFlag)
+			if err != nil {
+				logger.Fatal("Can not reload config", zap.String("path", *configFlag), zap.String("error", err.Error()))
+			}
+			config.M.Unlock()
 
 		}
 	}()
 }
 
 func main() {
-
 	go func() {
 		conn, err = NewDBConn(config)
 		if err != nil {
