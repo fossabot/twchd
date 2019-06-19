@@ -1,9 +1,10 @@
 package main
 
 import (
-	"database/sql"
 	"flag"
-	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"time"
 
@@ -14,32 +15,40 @@ import (
 
 var (
 	configFlag = flag.String("config", "", "path to config file")
+	logger     *zap.Logger
+	config     *BotConfig
+	err        error
+	conn       *DBConn
+	client     *twitch.Client
 )
 
-func main() {
+func init() {
 	flag.Parse()
-	logger, _ := zap.NewDevelopment()
+	logger, _ = zap.NewDevelopment()
 
-	config, err := NewBotConfig(*configFlag)
+	config, err = NewBotConfig(*configFlag)
 	if err != nil {
 		logger.Fatal("Can not load config", zap.String("path", *configFlag), zap.String("error", err.Error()))
 	}
 
-	var db *sql.DB
-	var initDBDone = make(chan bool)
-	defer db.Close()
+	reload := make(chan os.Signal, 1)
+	signal.Notify(reload, syscall.SIGHUP)
+
 	go func() {
-		DBPassword, err := config.GetDBPassword()
-		if err != nil {
-			logger.Fatal("Can not get 'GetDBPassword'", zap.String("config", config.Dump()), zap.String("error", err.Error()))
+		for {
+			<-reload
+
 		}
-		var connStr = fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-			config.Address, config.Port, config.Username, DBPassword, config.Database)
-		db, err = sql.Open("postgres", connStr)
+	}()
+}
+
+func main() {
+
+	go func() {
+		conn, err = NewDBConn(config)
 		if err != nil {
-			logger.Fatal("Can not open postgres connection", zap.String("config", config.Dump()), zap.String("error", err.Error()))
+			logger.Fatal("Can not create database connection", zap.String("config", config.Dump()), zap.String("error", err.Error()))
 		}
-		initDBDone <- true
 	}()
 
 	accountName, err := config.GetAccountName()
@@ -50,17 +59,13 @@ func main() {
 	if err != nil {
 		logger.Fatal("Can not get 'AccountToken'", zap.String("config", config.Dump()), zap.String("error", err.Error()))
 	}
-	var client = twitch.NewClient(accountName, token)
+	client = twitch.NewClient(accountName, token)
 	client.TLS = false
 
-	var queryStr = "CALL add_data($1, $2, $3, $4, $5, $6, $7, $8)"
-	<-initDBDone
 	client.OnPrivateMessage(func(msg twitch.PrivateMessage) {
-		var role = msg.Tags["turbo"] + msg.Tags["mod"] + msg.Tags["subscriber"]
-
-		_, err := db.Exec(queryStr, msg.Message, msg.ID, msg.Time, msg.Channel, msg.RoomID, msg.User.DisplayName, msg.User.ID, role)
+		_, err = conn.AddData(&msg)
 		if err != nil {
-			logger.Warn("Can not make query to database", zap.String("error", err.Error()))
+			logger.Warn("Can not add data to database", zap.String("error", err.Error()))
 		}
 	})
 
