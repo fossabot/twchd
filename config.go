@@ -7,7 +7,6 @@ import (
 	"os"
 	"regexp"
 	"strings"
-	"sync"
 
 	"github.com/go-yaml/yaml"
 )
@@ -25,7 +24,6 @@ func VerifyConfigPath(filename string) error {
 
 // BotConfig struct represent config from file
 type BotConfig struct {
-	mu *sync.RWMutex
 	// Twitch Client settings
 	AccountName  string   `yaml:"account_name"`
 	AccountToken string   `yaml:"account_token"`
@@ -39,34 +37,21 @@ type BotConfig struct {
 }
 
 // NewBotConfig takes config file and return BotConfig struct
-func NewBotConfig(filename string) (*BotConfig, error) {
-	var config = &BotConfig{
-		mu: new(sync.RWMutex),
-	}
-	var err = config.Load(filename)
+func NewBotConfig(filename string) (config *BotConfig, err error) {
+	err = VerifyConfigPath(filename)
 	if err != nil {
 		return nil, err
 	}
-	return config, nil
-}
-
-func (b *BotConfig) Load(filename string) error {
-	var err = VerifyConfigPath(filename)
-	if err != nil {
-		return err
-	}
 	rawConfig, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	err = yaml.Unmarshal(rawConfig, b)
+	config = new(BotConfig)
+	err = yaml.Unmarshal(rawConfig, config)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return
 }
 
 func getFieldOrEnv(field string) (string, error) {
@@ -90,55 +75,18 @@ func getFieldOrEnv(field string) (string, error) {
 
 // GetAccountName return account name from environment or config file
 func (b *BotConfig) GetAccountName() (string, error) {
-	b.mu.RLock()
-	defer b.mu.RUnlock()
 	return getFieldOrEnv(b.AccountName)
 }
 
 // GetToken return token from environment or config file
 func (b *BotConfig) GetToken() (string, error) {
-	b.mu.RLock()
-	defer b.mu.RUnlock()
 	return getFieldOrEnv(b.AccountToken)
-}
-func (b *BotConfig) GetAccountsList() []string {
-	b.mu.RLock()
-	defer b.mu.RUnlock()
-	return b.AccountsList
-}
-
-func (b *BotConfig) GetAddress() string {
-	b.mu.RLock()
-	defer b.mu.RUnlock()
-	return b.Address
-}
-
-func (b *BotConfig) GetPort() int {
-	b.mu.RLock()
-	defer b.mu.RUnlock()
-	return b.Port
-}
-
-func (b *BotConfig) GetUsername() string {
-	b.mu.RLock()
-	defer b.mu.RUnlock()
-	return b.Username
 }
 
 func (b *BotConfig) GetDBPassword() (string, error) {
-	b.mu.RLock()
-	defer b.mu.RUnlock()
 	return getFieldOrEnv(b.Password)
 }
 
-func (b *BotConfig) GetDatabase() string {
-	b.mu.RLock()
-	defer b.mu.RUnlock()
-	return b.Database
-}
-
 func (b *BotConfig) Dump() string {
-	b.mu.RLock()
-	defer b.mu.RUnlock()
 	return fmt.Sprintf("%+v\n", b)
 }
