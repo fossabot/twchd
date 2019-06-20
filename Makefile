@@ -19,7 +19,7 @@ clean:
 
 image: build
 	@echo "Building docker image..."
-	docker build -t $(PROJECTNAME):$(VERSION) .
+	docker build -t ${USER}/$(PROJECTNAME):$(VERSION) .
 
 build-arm: dep
 	@echo "Building binary for ARMv7..."
