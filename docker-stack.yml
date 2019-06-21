@@ -2,12 +2,15 @@ version: '3'
 
 services:
   db:
-    restart: always
     image: postgres:11
     volumes:
       - pg-data:/var/lib/postgresql
     ports:
       - 5432:5432
+    deploy:
+      mode: global
+      restart_policy:
+        condition: on-failure
 
 volumes:
   pg-data:
