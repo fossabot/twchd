@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/gempir/go-twitch-irc"
+	"github.com/gempir/go-twitch-irc/v2"
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 )
@@ -50,7 +50,8 @@ func main() {
 	client.OnPrivateMessage(func(msg twitch.PrivateMessage) {
 		var role = msg.Tags["turbo"] + msg.Tags["mod"] + msg.Tags["subscriber"]
 
-		_, err = conn.Exec(queryStr, msg.Message, msg.ID, msg.Time, msg.Channel, msg.RoomID, msg.User.DisplayName, msg.User.ID, role)
+		_, err = conn.Exec(queryStr, msg.ID, msg.Time, msg.RoomID, msg.Channel,
+			msg.User.ID, msg.User.DisplayName, role, msg.Message)
 		if err != nil {
 			logger.Warn("Can not add data to database", zap.String("error", err.Error()))
 		}
