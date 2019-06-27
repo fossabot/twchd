@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
-	"time"
 
 	"github.com/gempir/go-twitch-irc"
 	_ "github.com/lib/pq"
@@ -58,7 +57,11 @@ func main() {
 	})
 
 	<-initDBDone
-	RetryConnect(client, logger, 10, 6)
+	logger.Info("Start connecting to twitch")
+	err = client.Connect()
+	if err != nil {
+		logger.Warn("Error during connection to twitch", zap.String("error", err.Error()))
+	}
 }
 
 func NewDBConn(cfg *BotConfig) (*sql.DB, error) {
@@ -87,18 +90,4 @@ func NewTwitchClient(cfg *BotConfig) (*twitch.Client, error) {
 		client.Join(channel)
 	}
 	return client, nil
-}
-
-func RetryConnect(client *twitch.Client, logger *zap.Logger, period int, attempts int) {
-	var ticker = time.NewTicker(time.Duration(period) * time.Second)
-	for attempt := 0; attempt < attempts; attempt++ {
-		logger.Info("Start connecting to twitch", zap.Int("attempt", attempt))
-		err = client.Connect()
-		if err != nil {
-			logger.Warn("Error during connection to twitch", zap.String("error", err.Error()))
-		}
-		<-ticker.C
-	}
-	ticker.Stop()
-	logger.Fatal("Error during connection to twitch. Attempts exceeded", zap.Int("attempts", attempts))
 }
