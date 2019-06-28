@@ -18,7 +18,8 @@ clean:
 	@rm -f $(GOBIN)/$(PROJECTNAME) $(GOBIN)/$(PROJECTNAME)-armv7
 
 image: build
-	@echo "Building docker image..."
+	@echo "Building docker images..."
+	docker build -t ${USER}/postgres-twchd:$(VERSION) -f Dockerfile-db .
 	docker build -t ${USER}/$(PROJECTNAME):$(VERSION) .
 
 build-arm:

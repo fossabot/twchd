@@ -2,19 +2,17 @@ version: '3'
 
 services:
   db:
-    image: postgres:11
+    image: ivan/postgres-twchd:3.0-4-g6b7f14a
     volumes:
       - pg-data:/var/lib/postgresql
-    ports:
-      - 5432:5432
     deploy:
       mode: global
       restart_policy:
         condition: on-failure
   bot:
-    image: aded/twchd:3.0
+    image: ivan/twchd:3.0-4-g6b7f14a
     volumes:
-      - /home/ivan/go/src/twchd/config/example.yml:/app/config.yml
+      - ${PWD}/config/example.yml:/app/config.yml
     environment:
       - TWITCH_ACCOUNT=${TWITCH_ACCOUNT}
       - TWITCH_OAUTH=${TWITCH_OAUTH}
