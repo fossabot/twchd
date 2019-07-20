@@ -2,6 +2,6 @@ path "twchd/twitch" {
   capabilities = ["read"]
 }
 
-path "twchd/db" {
+path "twchd/postgres" {
   capabilities = ["read"]
 }

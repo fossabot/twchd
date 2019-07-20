@@ -1,22 +1,11 @@
 ## Twitch Client settings
-# Account name
-account_name: ${TWITCH_ACCOUNT}
-
-# Account oauth token
-# https://twitchapps.com/tmi/
-account_token: ${TWITCH_OAUTH}
-
 # List accounts for listening
 join_to:
   - stealth_unit
 
 ## Postgres DB settings
-address: db
+# Address for connection
+address: 127.0.0.1
 
+# Connection port
 port: 5432
-
-username: twchd
-
-password: ${TWCHD_PG_PASSWD}
-
-database: twchd

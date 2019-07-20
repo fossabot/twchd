@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  db:
+    image: postgres-twchd
+    volumes:
+      - pg-data:/var/lib/postgresql
+    ports:
+      - 5432:5432
+    deploy:
+      mode: global
+      placement:
+        constraints: [node.hostname == archhost]
+      restart_policy:
+        condition: on-failure
+
+volumes:
+  pg-data:

@@ -4,8 +4,12 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
+	"io/ioutil"
 
 	"github.com/gempir/go-twitch-irc/v2"
+	"github.com/go-playground/validator"
+	"github.com/go-yaml/yaml"
+	"github.com/hashicorp/vault/api"
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 )
@@ -13,7 +17,8 @@ import (
 var (
 	configFlag = flag.String("config", "", "path to config file")
 	logger     *zap.Logger
-	config     *BotConfig
+	config     *Config
+	vault      *api.Logical
 	err        error
 	conn       *sql.DB
 	initDBDone chan bool
@@ -24,15 +29,22 @@ func main() {
 	flag.Parse()
 	logger, _ = zap.NewDevelopment()
 
-	config, err = NewBotConfig(*configFlag)
+	config, err = NewYAMLConfig(*configFlag)
 	if err != nil {
-		logger.Fatal("Can not load config", zap.String("path", *configFlag), zap.String("error", err.Error()))
+		logger.Fatal("Can not load yaml config", zap.String("path", *configFlag), zap.String("error", err.Error()))
 	}
 	logger.Info("Bot config loaded", zap.String("config", config.Dump()))
 
+	var addr = "https://192.168.122.36:8200"
+	var token = "s.J3ZN4w0fb5ug3WRR61i652eZ"
+	vault, err = NewVault(addr, token)
+	if err != nil {
+		logger.Fatal("Can not create connection to vault", zap.String("address", addr), zap.String("token", token), zap.String("error", err.Error()))
+	}
+
 	initDBDone = make(chan bool)
 	go func() {
-		conn, err = NewDBConn(config)
+		conn, err = NewDBConn(vault, config)
 		if err != nil {
 			logger.Fatal("Can not create database connection", zap.String("config", config.Dump()), zap.String("error", err.Error()))
 		}
@@ -40,7 +52,7 @@ func main() {
 		logger.Info("DB connection created")
 	}()
 
-	client, err = NewTwitchClient(config)
+	client, err = NewTwitchClient(vault, config)
 	if err != nil {
 		logger.Fatal("Can not create twitch client", zap.String("config", config.Dump()), zap.String("error", err.Error()))
 	}
@@ -65,30 +77,75 @@ func main() {
 	}
 }
 
-func NewDBConn(cfg *BotConfig) (*sql.DB, error) {
-	passwd, err := cfg.GetDBPassword()
+func NewDBConn(v *api.Logical, c *Config) (*sql.DB, error) {
+	secret, err := v.Read("twchd/postgres")
 	if err != nil {
 		return nil, err
 	}
+	var user = secret.Data["user"].(string)
+	var passwd = secret.Data["password"].(string)
 	var connStr = fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		cfg.Address, cfg.Port, cfg.Username, passwd, cfg.Database)
+		c.Address, c.Port, user, passwd, user)
 	return sql.Open("postgres", connStr)
 }
 
-func NewTwitchClient(cfg *BotConfig) (*twitch.Client, error) {
-	accountName, err := cfg.GetAccountName()
+func NewTwitchClient(v *api.Logical, c *Config) (*twitch.Client, error) {
+	secret, err := v.Read("twchd/twitch")
 	if err != nil {
 		return nil, err
 	}
-	token, err := cfg.GetToken()
-	if err != nil {
-		return nil, err
-	}
+	var user = secret.Data["username"].(string)
+	var token = secret.Data["token"].(string)
 
-	var client = twitch.NewClient(accountName, token)
+	var client = twitch.NewClient(user, token)
 	client.TLS = false
-	for _, channel := range cfg.AccountsList {
+	for _, channel := range c.AccountsList {
 		client.Join(channel)
 	}
 	return client, nil
+}
+
+type Config struct {
+	AccountsList []string `yaml:"join_to"`
+	Address      string   `yaml:"address"`
+	Port         int      `yaml:"port"`
+}
+
+func NewYAMLConfig(filename string) (*Config, error) {
+	var validate = validator.New()
+	var err = validate.Var(filename, "file,endswith=.yml|endswith=.yaml")
+	if err != nil {
+		return nil, err
+	}
+	rawConfig, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	var config = new(Config)
+	err = yaml.Unmarshal(rawConfig, config)
+	if err != nil {
+		return nil, err
+	}
+	return config, nil
+}
+
+func (c *Config) Dump() string {
+	return fmt.Sprintf("%+v\n", c)
+}
+
+func NewVault(url, token string) (*api.Logical, error) {
+	var config = api.DefaultConfig()
+	config.Address = url
+	var err = config.ConfigureTLS(&api.TLSConfig{
+		CACert: "./assets/vault.crt",
+	})
+	if err != nil {
+		return nil, err
+	}
+	vault, err := api.NewClient(config)
+	if err != nil {
+		return nil, err
+	}
+	vault.SetToken(token)
+	return vault.Logical(), nil
 }
