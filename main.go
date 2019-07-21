@@ -111,7 +111,7 @@ func NewTwitchClient(v *api.Logical, c *Config) (*twitch.Client, error) {
 
 type Config struct {
 	AccountsList []string `yaml:"join_to" validate:"required,unique"`
-	Address      string   `yaml:"address" validate:"ipv4"`
+	Address      string   `yaml:"address" validate:"required"`
 	Port         int      `yaml:"port" validate:"min=1025,max=65535"`
 }
 

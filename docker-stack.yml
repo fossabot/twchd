@@ -1,24 +1,22 @@
 version: '3'
 
 services:
-  db:
-    image: ivan/postgres-twchd:3.0-4-g6b7f14a
+  postgres:
+    image: aded/postgres-twchd:${TAG}
     volumes:
       - pg-data:/var/lib/postgresql
     deploy:
       mode: global
+      placement:
+        constraints: [node.hostname == archhost]
       restart_policy:
         condition: on-failure
   bot:
-    image: ivan/twchd:3.0-4-g6b7f14a
+    image: aded/twchd:${TAG}
     volumes:
       - ${PWD}/config/example.yml:/app/config.yml
-    environment:
-      - TWITCH_ACCOUNT=${TWITCH_ACCOUNT}
-      - TWITCH_OAUTH=${TWITCH_OAUTH}
-      - TWCHD_PG_PASSWD=${TWCHD_PG_PASSWD}
     deploy:
-      mode: global
+      replicas: 1
       restart_policy:
         condition: on-failure
 

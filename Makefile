@@ -9,7 +9,7 @@ USER		:=	aded
 
 export CGO_ENABLED
 
-.PHONY: build clean image image-db build-arm generate
+.PHONY: build clean image image-db build-arm generate env
 
 build: generate
 	@echo "Building binary..."
@@ -20,11 +20,11 @@ clean:
 	@go clean
 	@rm -f $(GOBIN)/$(PROJECTNAME) $(GOBIN)/$(PROJECTNAME)-armv7
 
-image: build
+image: build env
 	@echo "Building docker images..."
 	docker build -t ${USER}/$(PROJECTNAME):$(VERSION) .
 
-image-db:
+image-db: env
 	docker build -t ${USER}/postgres-twchd:$(VERSION) -f Dockerfile-db .
 
 build-arm:
@@ -34,3 +34,6 @@ build-arm:
 generate: assets
 	@echo "Embedding statics..."
 	@go run assets_generate.go
+
+env:
+	echo "export TAG=${VERSION}" > .env

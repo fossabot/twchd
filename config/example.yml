@@ -5,7 +5,7 @@ join_to:
 
 ## Postgres DB settings
 # Address for connection
-address: 127.0.0.1
+address: postgres
 
 # Connection port
 port: 5432
