@@ -1,16 +1,19 @@
 PROJECTNAME	:=	$(shell basename "$(PWD)")
 GOBASE 		:= 	$(shell pwd)
 GOBIN 		:= 	$(GOBASE)/bin
-GOSOURCE 	:= 	$(wildcard *.go)
+GOSOURCE 	:= 	$(filter-out $(wildcard *_generate.go),$(wildcard *.go))
 VERSION		:=	$(shell git describe --tags)
 LDFLAGS 	:= 	-ldflags "-s -w"
+CGO_ENABLED	:=	0
+USER		:=	aded
 
+export CGO_ENABLED
 
-.PHONY: build clean image build-arm
+.PHONY: build clean image image-db build-arm generate
 
-build:
+build: generate
 	@echo "Building binary..."
-	CGO_ENABLED=0 go build $(LDFLAGS) -o $(GOBIN)/$(PROJECTNAME) $(GOSOURCE)
+	go build $(LDFLAGS) -o $(GOBIN)/$(PROJECTNAME) $(GOSOURCE)
 
 clean:
 	@echo "Cleaning build cache and binaries..."
@@ -19,9 +22,15 @@ clean:
 
 image: build
 	@echo "Building docker images..."
-	docker build -t ${USER}/postgres-twchd:$(VERSION) -f Dockerfile-db .
 	docker build -t ${USER}/$(PROJECTNAME):$(VERSION) .
+
+image-db:
+	docker build -t ${USER}/postgres-twchd:$(VERSION) -f Dockerfile-db .
 
 build-arm:
 	@echo "Building binary for ARMv7..."
-	GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=0 go build $(LDFLAGS) -o $(GOBIN)/$(PROJECTNAME)-armv7 $(GOSOURCE)
+	GOOS=linux GOARCH=arm GOARM=7 go build $(LDFLAGS) -o $(GOBIN)/$(PROJECTNAME)-armv7 $(GOSOURCE)
+
+generate: assets
+	@echo "Embedding statics..."
+	@go run assets_generate.go

@@ -2,7 +2,7 @@ version: '3'
 
 services:
   db:
-    image: postgres-twchd
+    image: aded/postgres-twchd:3.0-6-g7043e04
     volumes:
       - pg-data:/var/lib/postgresql
     ports:

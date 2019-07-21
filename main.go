@@ -1,10 +1,14 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"database/sql"
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 
 	"github.com/gempir/go-twitch-irc/v2"
 	"github.com/go-playground/validator"
@@ -106,9 +110,9 @@ func NewTwitchClient(v *api.Logical, c *Config) (*twitch.Client, error) {
 }
 
 type Config struct {
-	AccountsList []string `yaml:"join_to"`
-	Address      string   `yaml:"address"`
-	Port         int      `yaml:"port"`
+	AccountsList []string `yaml:"join_to" validate:"required,unique"`
+	Address      string   `yaml:"address" validate:"ipv4"`
+	Port         int      `yaml:"port" validate:"min=1025,max=65535"`
 }
 
 func NewYAMLConfig(filename string) (*Config, error) {
@@ -126,6 +130,10 @@ func NewYAMLConfig(filename string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	err = validate.Struct(config)
+	if err != nil {
+		return nil, err
+	}
 	return config, nil
 }
 
@@ -134,15 +142,26 @@ func (c *Config) Dump() string {
 }
 
 func NewVault(url, token string) (*api.Logical, error) {
-	var config = api.DefaultConfig()
-	config.Address = url
-	var err = config.ConfigureTLS(&api.TLSConfig{
-		CACert: "./assets/vault.crt",
-	})
+	assetCrt, err := assets.Open("/vault.crt")
 	if err != nil {
 		return nil, err
 	}
+	pem, err := ioutil.ReadAll(assetCrt)
+	if err != nil {
+		return nil, err
+	}
+	var certPool = x509.NewCertPool()
+	var ok = certPool.AppendCertsFromPEM(pem)
+	if !ok {
+		return nil, errors.New("Can not load pem crt from vfs")
+	}
+	var config = api.DefaultConfig()
+	config.HttpClient.Transport.(*http.Transport).TLSClientConfig = &tls.Config{RootCAs: certPool}
 	vault, err := api.NewClient(config)
+	if err != nil {
+		return nil, err
+	}
+	err = vault.SetAddress(url)
 	if err != nil {
 		return nil, err
 	}
